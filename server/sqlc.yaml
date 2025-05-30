@@ -1,0 +1,11 @@
+version: "2"
+sql:
+  - engine: "sqlite"
+    queries: "./internal/repositories/db/queries/*.sql"   # Ruta donde se encuentran las consultas SQL
+    schema: "./internal/repositories/db/migrations/*.sql"  # Ruta donde se encuentran los archivos de esquema (migraciones)
+    gen:
+      go:
+        package: "sqlc"                                      # Paquete generado en Go
+        out: "./internal/repositories/db/sqlc"                   # Ruta donde se generará el código Go
+        emit_json_tags: false                                # Emitir etiquetas JSON en las estructuras generadas
+        emit_prepared_queries: false                        # Desactivar las consultas preparadas si no las necesitas
