@@ -38,11 +38,9 @@ type Product struct {
 	Name      string
 	Cost      sql.NullFloat64
 	Price     sql.NullFloat64
-	SaleID    int64
-	ClientID  int64
+	Stock     int64
 	CreatedAt time.Time
 	UpdatedAt time.Time
-	Foreign   interface{}
 }
 
 type Quota struct {
@@ -59,12 +57,28 @@ type Quota struct {
 }
 
 type Sale struct {
+	ID          int64
+	Description string
+	Amount      float64
+	IsPaid      bool
+	StateID     int64
+	ClientID    int64
+	Date        time.Time
+	CreatedAt   time.Time
+	UpdatedAt   time.Time
+}
+
+type SaleProduct struct {
 	ID        int64
-	Amount    float64
-	IsPaid    bool
+	Name      string
+	Cost      sql.NullFloat64
+	Price     sql.NullFloat64
+	Quantity  int64
+	SaleID    int64
 	ClientID  int64
 	CreatedAt time.Time
 	UpdatedAt time.Time
+	Foreign   interface{}
 }
 
 type State struct {

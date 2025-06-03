@@ -40,3 +40,8 @@ func Ok(w http.ResponseWriter, data any) {
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(data)
 }
+func Created(w http.ResponseWriter, data any) {
+	w.Header().Add("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(data)
+}

@@ -9,7 +9,6 @@ type Product struct {
 	Cost			float64 	`json:"cost"`
 	Price			float64 	`json:"price"`
 
-	CreatedAt *time.Time
 	UpdatedAt *time.Time
 }
 

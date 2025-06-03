@@ -2,13 +2,20 @@ package domain
 
 import "time"
 
+type SaleSummary struct {
+	ID						any					`json:"id"`	
+	Description 	string			`json:"description"`
+	IsPaid				bool				`json:"is_paid"`
+	StateID				int					`json:"state"`
+}
 
 type Sale struct {
-	ID				any					`json:"id"`	
-	Amount 		float64			`json:"amount"`
-	IsPaid		bool				`json:"is_paid"`
-	Products 	[]*Product	`json:"products"`
-	Quotas 		[]*Quota		`json:"quotas"`
-	CreatedAt *time.Time
-	UpdatedAt *time.Time
+	ID						any							`json:"id"`	
+	Description 	string					`json:"description"`
+	Amount 				float64					`json:"amount"`
+	IsPaid				bool						`json:"is_paid"`
+	Date					*time.Time			`json:"date"`
+	StateID				int							`json:"state"`
+	Products 			[]*SaleProduct	`json:"products"`
+	Quotas 				[]*Quota				`json:"quotas"`
 }

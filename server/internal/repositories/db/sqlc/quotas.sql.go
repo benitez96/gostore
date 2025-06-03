@@ -7,7 +7,32 @@ package sqlc
 
 import (
 	"context"
+	"time"
 )
+
+const createQuota = `-- name: CreateQuota :exec
+INSERT INTO quotas (number, amount, due_date, sale_id, client_id)
+VALUES (?, ?, ?, ?, ?)
+`
+
+type CreateQuotaParams struct {
+	Number   int64
+	Amount   float64
+	DueDate  time.Time
+	SaleID   int64
+	ClientID int64
+}
+
+func (q *Queries) CreateQuota(ctx context.Context, arg CreateQuotaParams) error {
+	_, err := q.db.ExecContext(ctx, createQuota,
+		arg.Number,
+		arg.Amount,
+		arg.DueDate,
+		arg.SaleID,
+		arg.ClientID,
+	)
+	return err
+}
 
 const getSaleQuotas = `-- name: GetSaleQuotas :many
 SELECT id, number, amount, due_date, is_paid, sale_id, client_id, created_at, updated_at, "foreign" FROM quotas WHERE sale_id = ?

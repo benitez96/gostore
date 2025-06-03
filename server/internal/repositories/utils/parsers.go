@@ -8,6 +8,10 @@ import (
 )
 
 
+func ParseToSqlNullFloat64(n float64) sql.NullFloat64 {
+	return sql.NullFloat64{ Float64: n, Valid: n != 0 }
+}
+
 func ParseToSqlNullString(s string) sql.NullString {
 	return sql.NullString{ String: s, Valid: s != "" }
 }

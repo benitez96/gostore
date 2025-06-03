@@ -7,28 +7,91 @@ package sqlc
 
 import (
 	"context"
+	"time"
 )
 
-const getSalesByClientID = `-- name: GetSalesByClientID :many
-SELECT id, amount, is_paid, client_id, created_at, updated_at FROM sales WHERE client_id = ?
+const createSale = `-- name: CreateSale :one
+INSERT INTO sales (description, amount, client_id, date)
+VALUES (?, ?, ?, ?)
+RETURNING id
 `
 
-func (q *Queries) GetSalesByClientID(ctx context.Context, clientID int64) ([]Sale, error) {
+type CreateSaleParams struct {
+	Description string
+	Amount      float64
+	ClientID    int64
+	Date        time.Time
+}
+
+func (q *Queries) CreateSale(ctx context.Context, arg CreateSaleParams) (int64, error) {
+	row := q.db.QueryRowContext(ctx, createSale,
+		arg.Description,
+		arg.Amount,
+		arg.ClientID,
+		arg.Date,
+	)
+	var id int64
+	err := row.Scan(&id)
+	return id, err
+}
+
+const getSaleByID = `-- name: GetSaleByID :one
+SELECT id, description, amount, is_paid, state_id, client_id, date, created_at, updated_at FROM sales WHERE id = ?
+`
+
+func (q *Queries) GetSaleByID(ctx context.Context, id int64) (Sale, error) {
+	row := q.db.QueryRowContext(ctx, getSaleByID, id)
+	var i Sale
+	err := row.Scan(
+		&i.ID,
+		&i.Description,
+		&i.Amount,
+		&i.IsPaid,
+		&i.StateID,
+		&i.ClientID,
+		&i.Date,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const getSalesByClientID = `-- name: GetSalesByClientID :many
+SELECT 
+  s.id,
+  s.client_id,
+  s.description,
+  s.date,
+  s.state_id,
+  s.is_paid
+FROM sales s WHERE s.client_id = ? ORDER BY s.id desc
+`
+
+type GetSalesByClientIDRow struct {
+	ID          int64
+	ClientID    int64
+	Description string
+	Date        time.Time
+	StateID     int64
+	IsPaid      bool
+}
+
+func (q *Queries) GetSalesByClientID(ctx context.Context, clientID int64) ([]GetSalesByClientIDRow, error) {
 	rows, err := q.db.QueryContext(ctx, getSalesByClientID, clientID)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []Sale
+	var items []GetSalesByClientIDRow
 	for rows.Next() {
-		var i Sale
+		var i GetSalesByClientIDRow
 		if err := rows.Scan(
 			&i.ID,
-			&i.Amount,
-			&i.IsPaid,
 			&i.ClientID,
-			&i.CreatedAt,
-			&i.UpdatedAt,
+			&i.Description,
+			&i.Date,
+			&i.StateID,
+			&i.IsPaid,
 		); err != nil {
 			return nil, err
 		}

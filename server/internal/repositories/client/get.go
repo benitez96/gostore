@@ -3,8 +3,6 @@ package repositories
 import (
 	"context"
 	"errors"
-	"fmt"
-	"sync"
 
 	"github.com/benitez96/gostore/internal/domain"
 	"github.com/benitez96/gostore/internal/repositories/db/sqlc"
@@ -13,56 +11,25 @@ import (
 
 
 
-func (r *Repository) GetAll(search string, limit, offset int) (*domain.Paginated[*domain.ClientSummary], error) {
+func (r *Repository) GetAll(search string, limit, offset int) ([]*domain.ClientSummary, error) {
 	ctx, cancel := utils.GetContext()
 	defer cancel()
 
-	var count int64
-	var results []sqlc.GetClientsRow
+	rows, err := r.Queries.GetClients(ctx, sqlc.GetClientsParams{
+		Name:     startsWith(search),
+		Lastname: startsWith(search),
+		Dni:      startsWith(search),
+		Limit:    int64(limit),
+		Offset:   int64(offset),
+	})
 
-	var wg sync.WaitGroup
-	wg.Add(2)
-
-	errs := make(chan error, 2)
-	go func() {
-		defer wg.Done()
-		var err error
-		count, err = r.Queries.CountClients(ctx, sqlc.CountClientsParams{
-			Name:     shouldContain(search),
-			Lastname: shouldContain(search),
-			Dni:      shouldContain(search),
-		})
-		errs <- err
-	}()
-
-	go func() {
-		defer wg.Done()
-		var err error
-		results, err = r.Queries.GetClients(ctx, sqlc.GetClientsParams{
-			Name:     shouldContain(search),
-			Lastname: shouldContain(search),
-			Dni:      shouldContain(search),
-			Limit:    int64(limit),
-			Offset:   int64(offset),
-		})
-		errs <- err
-	}()
-	wg.Wait()
-
-	if err := <-errs; err != nil {
-		manageError(err)
-	}
-	if err := <-errs; err != nil {
+	if err != nil {
 		manageError(err)
 	}
 
-	clients := &domain.Paginated[*domain.ClientSummary]{
-		Total:   int(count),
-		Results: make([]*domain.ClientSummary, 0, len(results)),
-	}
-
-	for _, result := range results {
-		client := &domain.ClientSummary{
+	clients := make([]*domain.ClientSummary, len(rows))
+	for i, result := range rows {
+		clients[i] = &domain.ClientSummary{
 			ID:			 	result.ID,
 			Name:     result.Name,
 			Lastname: result.Lastname,
@@ -72,13 +39,12 @@ func (r *Repository) GetAll(search string, limit, offset int) (*domain.Paginated
 				Description: result.Statedescription,
 			},
 		}
-		clients.Results = append(clients.Results, client)
 	}
 
 	return clients, nil
 }
 
-func (r *Repository) Get(id string) (client *domain.Client, err error) {
+func (r *Repository) Get(id string) (*domain.Client, error) {
 	ctx, cancel := utils.GetContext()
 	defer cancel()
 
@@ -91,26 +57,25 @@ func (r *Repository) Get(id string) (client *domain.Client, err error) {
 		return nil, domain.ErrNotFound
 	}
 
-	fmt.Println("res", res)
+	client := &domain.Client{
+		ID:        res.ID,
+		Name:      res.Name,
+		Lastname:  res.Lastname,
+		Dni:       res.Dni,
+		State: &domain.State{
+			ID:          res.StateID,
+			Description: res.StateDescription,
+		},
+		Email: utils.ParseToEmptyString(res.Email),
+		Phone: utils.ParseToEmptyString(res.Phone),
+		Address: utils.ParseToEmptyString(res.Address),
+	}
 
-	// go func() { 
-	// 	products, _ := r.Queries.GetProductsByClientID(ctx, clientID) 
-	// }()
-	// go func() { 
-	// 	quotas, _ := r.Queries.GetQuotasByClientID(ctx, clientID) 
-	// }()
-	// go func() { 
-	// 	payments, _ := r.Queries.GetPaymentsByClientID(ctx, clientID) 
-	// }()
-	// go func() { 
-	// 	sales, _ := r.Queries.GetSalesByClientID(ctx, clientID) 
-	// }()
-
-	return nil, nil
+	return client, nil
 }
 
-func shouldContain (seach string) string {
-	return "%" + seach + "%"
+func startsWith (seach string) string {
+	return seach + "%"
 }
 
 func manageError(err error) (any, error) {
