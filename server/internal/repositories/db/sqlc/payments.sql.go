@@ -7,7 +7,42 @@ package sqlc
 
 import (
 	"context"
+	"time"
 )
+
+const createPayment = `-- name: CreatePayment :one
+INSERT INTO payments (amount, date, quota_id, client_id) 
+VALUES (?, ?, ?, ?) 
+RETURNING id, amount, date, quota_id, client_id, created_at, updated_at, "foreign"
+`
+
+type CreatePaymentParams struct {
+	Amount   float64
+	Date     time.Time
+	QuotaID  int64
+	ClientID int64
+}
+
+func (q *Queries) CreatePayment(ctx context.Context, arg CreatePaymentParams) (Payment, error) {
+	row := q.db.QueryRowContext(ctx, createPayment,
+		arg.Amount,
+		arg.Date,
+		arg.QuotaID,
+		arg.ClientID,
+	)
+	var i Payment
+	err := row.Scan(
+		&i.ID,
+		&i.Amount,
+		&i.Date,
+		&i.QuotaID,
+		&i.ClientID,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.Foreign,
+	)
+	return i, err
+}
 
 const getQuotaPayments = `-- name: GetQuotaPayments :many
 SELECT id, amount, date, quota_id, client_id, created_at, updated_at, "foreign" FROM payments WHERE quota_id = ?

@@ -12,6 +12,7 @@ type CreateSaleDto struct {
 }
 
 type ProductDto struct {
+	ID	int64  `json:"id,omitempty"`
 	Name	string  `json:"name"`
 	Cost	float64 `json:"cost"`
 	Price	float64 `json:"price"`

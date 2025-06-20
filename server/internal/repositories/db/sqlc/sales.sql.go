@@ -105,3 +105,18 @@ func (q *Queries) GetSalesByClientID(ctx context.Context, clientID int64) ([]Get
 	}
 	return items, nil
 }
+
+const updateSalePaymentStatus = `-- name: UpdateSalePaymentStatus :exec
+UPDATE sales SET is_paid = ?, state_id = ? WHERE id = ?
+`
+
+type UpdateSalePaymentStatusParams struct {
+	IsPaid  bool
+	StateID int64
+	ID      int64
+}
+
+func (q *Queries) UpdateSalePaymentStatus(ctx context.Context, arg UpdateSalePaymentStatusParams) error {
+	_, err := q.db.ExecContext(ctx, updateSalePaymentStatus, arg.IsPaid, arg.StateID, arg.ID)
+	return err
+}

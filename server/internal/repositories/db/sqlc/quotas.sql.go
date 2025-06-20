@@ -7,6 +7,7 @@ package sqlc
 
 import (
 	"context"
+	"database/sql"
 	"time"
 )
 
@@ -34,8 +35,31 @@ func (q *Queries) CreateQuota(ctx context.Context, arg CreateQuotaParams) error 
 	return err
 }
 
+const getQuotaByID = `-- name: GetQuotaByID :one
+SELECT id, number, amount, due_date, is_paid, state_id, sale_id, client_id, created_at, updated_at, "foreign" FROM quotas WHERE id = ?
+`
+
+func (q *Queries) GetQuotaByID(ctx context.Context, id int64) (Quota, error) {
+	row := q.db.QueryRowContext(ctx, getQuotaByID, id)
+	var i Quota
+	err := row.Scan(
+		&i.ID,
+		&i.Number,
+		&i.Amount,
+		&i.DueDate,
+		&i.IsPaid,
+		&i.StateID,
+		&i.SaleID,
+		&i.ClientID,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.Foreign,
+	)
+	return i, err
+}
+
 const getSaleQuotas = `-- name: GetSaleQuotas :many
-SELECT id, number, amount, due_date, is_paid, sale_id, client_id, created_at, updated_at, "foreign" FROM quotas WHERE sale_id = ?
+SELECT id, number, amount, due_date, is_paid, state_id, sale_id, client_id, created_at, updated_at, "foreign" FROM quotas WHERE sale_id = ?
 `
 
 func (q *Queries) GetSaleQuotas(ctx context.Context, saleID int64) ([]Quota, error) {
@@ -53,6 +77,7 @@ func (q *Queries) GetSaleQuotas(ctx context.Context, saleID int64) ([]Quota, err
 			&i.Amount,
 			&i.DueDate,
 			&i.IsPaid,
+			&i.StateID,
 			&i.SaleID,
 			&i.ClientID,
 			&i.CreatedAt,
@@ -70,4 +95,34 @@ func (q *Queries) GetSaleQuotas(ctx context.Context, saleID int64) ([]Quota, err
 		return nil, err
 	}
 	return items, nil
+}
+
+const updateQuota = `-- name: UpdateQuota :exec
+UPDATE quotas SET amount = ?, due_date = ? WHERE id = ?
+`
+
+type UpdateQuotaParams struct {
+	Amount  float64
+	DueDate time.Time
+	ID      int64
+}
+
+func (q *Queries) UpdateQuota(ctx context.Context, arg UpdateQuotaParams) error {
+	_, err := q.db.ExecContext(ctx, updateQuota, arg.Amount, arg.DueDate, arg.ID)
+	return err
+}
+
+const updateQuotaPaymentStatus = `-- name: UpdateQuotaPaymentStatus :exec
+UPDATE quotas SET is_paid = ?, state_id = ? WHERE id = ?
+`
+
+type UpdateQuotaPaymentStatusParams struct {
+	IsPaid  sql.NullBool
+	StateID int64
+	ID      int64
+}
+
+func (q *Queries) UpdateQuotaPaymentStatus(ctx context.Context, arg UpdateQuotaPaymentStatusParams) error {
+	_, err := q.db.ExecContext(ctx, updateQuotaPaymentStatus, arg.IsPaid, arg.StateID, arg.ID)
+	return err
 }

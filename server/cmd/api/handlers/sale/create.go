@@ -2,7 +2,6 @@ package sale
 
 import (
 	"encoding/json"
-	"fmt"
 	"net/http"
 
 	"github.com/benitez96/gostore/cmd/core/responses"

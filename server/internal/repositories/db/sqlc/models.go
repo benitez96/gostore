@@ -22,6 +22,14 @@ type Client struct {
 	UpdatedAt sql.NullTime
 }
 
+type Note struct {
+	ID        int64
+	Content   string
+	SaleID    int64
+	CreatedAt time.Time
+	UpdatedAt time.Time
+}
+
 type Payment struct {
 	ID        int64
 	Amount    float64
@@ -49,6 +57,7 @@ type Quota struct {
 	Amount    float64
 	DueDate   time.Time
 	IsPaid    sql.NullBool
+	StateID   int64
 	SaleID    int64
 	ClientID  int64
 	CreatedAt time.Time

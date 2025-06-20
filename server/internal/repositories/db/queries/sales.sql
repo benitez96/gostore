@@ -8,7 +8,6 @@ SELECT
   s.is_paid
 FROM sales s WHERE s.client_id = ? ORDER BY s.id desc;
 
-
 -- name: GetSaleByID :one
 SELECT * FROM sales WHERE id = ?;
 
@@ -16,3 +15,6 @@ SELECT * FROM sales WHERE id = ?;
 INSERT INTO sales (description, amount, client_id, date)
 VALUES (?, ?, ?, ?)
 RETURNING id;
+
+-- name: UpdateSalePaymentStatus :exec
+UPDATE sales SET is_paid = ?, state_id = ? WHERE id = ?;

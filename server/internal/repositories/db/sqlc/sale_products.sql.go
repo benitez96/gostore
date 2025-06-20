@@ -35,3 +35,46 @@ func (q *Queries) CreateSaleProduct(ctx context.Context, arg CreateSaleProductPa
 	)
 	return err
 }
+
+const getSaleProductsBySaleID = `-- name: GetSaleProductsBySaleID :many
+SELECT id, name, cost, price, quantity
+FROM sale_products
+WHERE sale_id = ?
+`
+
+type GetSaleProductsBySaleIDRow struct {
+	ID       int64
+	Name     string
+	Cost     sql.NullFloat64
+	Price    sql.NullFloat64
+	Quantity int64
+}
+
+func (q *Queries) GetSaleProductsBySaleID(ctx context.Context, saleID int64) ([]GetSaleProductsBySaleIDRow, error) {
+	rows, err := q.db.QueryContext(ctx, getSaleProductsBySaleID, saleID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetSaleProductsBySaleIDRow
+	for rows.Next() {
+		var i GetSaleProductsBySaleIDRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Name,
+			&i.Cost,
+			&i.Price,
+			&i.Quantity,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}

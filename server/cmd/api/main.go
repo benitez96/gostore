@@ -11,10 +11,19 @@ import (
 	"github.com/benitez96/gostore/internal/repositories/db/sqlc"
 
 	clientHandler "github.com/benitez96/gostore/cmd/api/handlers/client"
+	paymentHandler "github.com/benitez96/gostore/cmd/api/handlers/payment"
+	quotaHandler "github.com/benitez96/gostore/cmd/api/handlers/quota"
+	saleHandler "github.com/benitez96/gostore/cmd/api/handlers/sale"
 	clientRepository "github.com/benitez96/gostore/internal/repositories/client"
 	clientSvc "github.com/benitez96/gostore/internal/services/client"
-	saleHandler "github.com/benitez96/gostore/cmd/api/handlers/sale"
+
+	// repositories
+	paymentRepository "github.com/benitez96/gostore/internal/repositories/payment"
+	quotaRepository "github.com/benitez96/gostore/internal/repositories/quota"
 	saleRepository "github.com/benitez96/gostore/internal/repositories/sale"
+	saleProductRepository "github.com/benitez96/gostore/internal/repositories/sale_product"
+	paymentSvc "github.com/benitez96/gostore/internal/services/payment"
+	quotaSvc "github.com/benitez96/gostore/internal/services/quota"
 	saleSvc "github.com/benitez96/gostore/internal/services/sale"
 )
 
@@ -28,21 +37,56 @@ func main() {
 
 	saleRepository := saleRepository.Repository{
 		Queries: sqlc.New(dbConnection),
-		DB: 		dbConnection,
+		DB:      dbConnection,
+	}
+
+	saleProductRepository := saleProductRepository.Repository{
+		Queries: sqlc.New(dbConnection),
+		DB:      dbConnection,
+	}
+
+	quotaRepository := quotaRepository.Repository{
+		Queries: sqlc.New(dbConnection),
+		DB:      dbConnection,
+	}
+	paymentRepository := paymentRepository.Repository{
+		Queries: sqlc.New(dbConnection),
+		DB:      dbConnection,
 	}
 	saleSvc := saleSvc.Service{
-		Repo: &saleRepository,
+		Sr:  &saleRepository,
+		Spr: &saleProductRepository,
+		Qr:  &quotaRepository,
+		Pr:  &paymentRepository,
+	}
+
+	paymentSvc := paymentSvc.Service{
+		Repo:      &paymentRepository,
+		QuotaRepo: &quotaRepository,
+		SaleRepo:  &saleRepository,
+	}
+
+	quotaSvc := quotaSvc.Service{
+		Repo: &quotaRepository,
 	}
 
 	saleHandler := saleHandler.Handler{
 		Service: &saleSvc,
 	}
 
+	paymentHandler := paymentHandler.Handler{
+		Service: &paymentSvc,
+	}
+
+	quotaHandler := quotaHandler.Handler{
+		Service: &quotaSvc,
+	}
+
 	clientRepository := clientRepository.Repository{
 		Queries: sqlc.New(dbConnection),
 	}
 	clientSvc := clientSvc.Service{
-		Repo: &clientRepository,
+		Repo:    &clientRepository,
 		SaleSvc: &saleSvc,
 	}
 	clientHandler := clientHandler.Handler{
@@ -58,6 +102,13 @@ func main() {
 
 	// sale routes
 	router.POST("/sales", saleHandler.CreateSale)
+	router.GET("/sales/:id", saleHandler.GetByID)
+
+	// payment routes
+	router.POST("/payments", paymentHandler.CreatePayment)
+
+	// quota routes
+	router.PUT("/quotas/:id", quotaHandler.UpdateQuota)
 
 	fmt.Println("🚀 Starting server on port 8080")
 	log.Fatal(http.ListenAndServe(":8080", router))

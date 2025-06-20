@@ -32,6 +32,14 @@ func (r *Repository) CreateSaleWithProductsAndQuotas(dto *dto.CreateSaleDto) (in
 	}
 
 	for _, p := range dto.Products {
+
+		if p.ID != 0 {
+			err = qtx.UpdateProductStock(ctx, sqlc.UpdateProductStockParams{
+				ID:    p.ID,
+				Stock: int64(p.Quantity),
+			})
+		}
+
 		err = qtx.CreateSaleProduct(ctx, sqlc.CreateSaleProductParams{
 			Name:     p.Name,
 			Cost:     utils.ParseToSqlNullFloat64(p.Cost),
@@ -40,6 +48,7 @@ func (r *Repository) CreateSaleWithProductsAndQuotas(dto *dto.CreateSaleDto) (in
 			SaleID:   saleID,
 			ClientID: int64(dto.ClientID),
 		})
+
 		if err != nil {
 			tx.Rollback()
 			return 0, err

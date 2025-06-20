@@ -56,11 +56,13 @@ CREATE TABLE quotas (
     amount FLOAT NOT NULL,
     due_date TIMESTAMP NOT NULL,
     is_paid BOOLEAN DEFAULT false,
+    state_id INT NOT NULL DEFAULT 1,
     sale_id INT NOT NULL,
     client_id INT NOT NULL,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (sale_id) REFERENCES sales(id) ON DELETE CASCADE
+    FOREIGN KEY (state_id) REFERENCES states(id) ON DELETE CASCADE
     FOREIGN KEY (client_id) REFERENCES clients(id) ON DELETE CASCADE
 );
 
@@ -81,6 +83,15 @@ CREATE TABLE states (
     description VARCHAR(255) NOT NULL
 );
 
+CREATE TABLE notes (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    content TEXT NOT NULL,
+    sale_id INT NOT NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (sale_id) REFERENCES sales(id) ON DELETE CASCADE
+);
+
 CREATE INDEX idx_clients_name ON clients(name);
 CREATE INDEX idx_clients_lastname ON clients(lastname);
 CREATE INDEX idx_clients_dni ON clients(dni);
@@ -88,6 +99,7 @@ CREATE INDEX idx_quotas_client_id ON quotas(client_id);
 CREATE INDEX idx_sales_client_id ON sales(client_id);
 CREATE INDEX idx_products_sale_id ON sale_products(sale_id);
 CREATE INDEX idx_quotas_sale_id ON quotas(sale_id);
+CREATE INDEX idx_notes_sale_id ON notes(sale_id);
 CREATE INDEX idx_payments_quota_id ON payments(quota_id);
 
 -- Insert initial states
@@ -103,6 +115,7 @@ DROP TABLE sale_products;
 DROP TABLE products;
 DROP TABLE quotas;
 DROP TABLE payments;
+DROP TABLE notes;
 DROP TABLE states;
 DROP INDEX IF EXISTS idx_clients_name;
 DROP INDEX IF EXISTS idx_clients_lastname;
@@ -112,3 +125,4 @@ DROP INDEX IF EXISTS idx_sales_client_id;
 DROP INDEX IF EXISTS idx_products_sale_id;
 DROP INDEX IF EXISTS idx_quotas_sale_id;
 DROP INDEX IF EXISTS idx_payments_quota_id;
+DROP INDEX IF EXISTS idx_notes_sale_id;
