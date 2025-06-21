@@ -44,6 +44,35 @@ func (q *Queries) CreatePayment(ctx context.Context, arg CreatePaymentParams) (P
 	return i, err
 }
 
+const deletePayment = `-- name: DeletePayment :exec
+DELETE FROM payments WHERE id = ?
+`
+
+func (q *Queries) DeletePayment(ctx context.Context, id int64) error {
+	_, err := q.db.ExecContext(ctx, deletePayment, id)
+	return err
+}
+
+const getPaymentByID = `-- name: GetPaymentByID :one
+SELECT id, amount, date, quota_id, client_id, created_at, updated_at, "foreign" FROM payments WHERE id = ?
+`
+
+func (q *Queries) GetPaymentByID(ctx context.Context, id int64) (Payment, error) {
+	row := q.db.QueryRowContext(ctx, getPaymentByID, id)
+	var i Payment
+	err := row.Scan(
+		&i.ID,
+		&i.Amount,
+		&i.Date,
+		&i.QuotaID,
+		&i.ClientID,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.Foreign,
+	)
+	return i, err
+}
+
 const getQuotaPayments = `-- name: GetQuotaPayments :many
 SELECT id, amount, date, quota_id, client_id, created_at, updated_at, "foreign" FROM payments WHERE quota_id = ?
 `

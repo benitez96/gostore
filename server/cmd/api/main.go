@@ -106,6 +106,7 @@ func main() {
 
 	// payment routes
 	router.POST("/payments", paymentHandler.CreatePayment)
+	router.DELETE("/payments/:id", paymentHandler.DeletePayment)
 
 	// quota routes
 	router.PUT("/quotas/:id", quotaHandler.UpdateQuota)
