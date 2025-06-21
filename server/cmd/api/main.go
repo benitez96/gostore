@@ -12,6 +12,7 @@ import (
 
 	clientHandler "github.com/benitez96/gostore/cmd/api/handlers/client"
 	paymentHandler "github.com/benitez96/gostore/cmd/api/handlers/payment"
+	prodHandler "github.com/benitez96/gostore/cmd/api/handlers/product"
 	quotaHandler "github.com/benitez96/gostore/cmd/api/handlers/quota"
 	saleHandler "github.com/benitez96/gostore/cmd/api/handlers/sale"
 	clientRepository "github.com/benitez96/gostore/internal/repositories/client"
@@ -31,6 +32,9 @@ import (
 	noteSvc "github.com/benitez96/gostore/internal/services/note"
 
 	noteHandler "github.com/benitez96/gostore/cmd/api/handlers/note"
+
+	productRepository "github.com/benitez96/gostore/internal/repositories/product"
+	productSvc "github.com/benitez96/gostore/internal/services/product"
 )
 
 func main() {
@@ -69,6 +73,10 @@ func main() {
 		Queries: sqlc.New(dbConnection),
 	}
 
+	productRepository := productRepository.Repository{
+		Queries: sqlc.New(dbConnection),
+	}
+
 	saleSvc := saleSvc.Service{
 		Sr:         &saleRepository,
 		Spr:        &saleProductRepository,
@@ -90,6 +98,10 @@ func main() {
 
 	noteSvc := noteSvc.Service{
 		Repo: &noteRepository,
+	}
+
+	productSvc := productSvc.Service{
+		Repo: &productRepository,
 	}
 
 	saleHandler := saleHandler.Handler{
@@ -116,6 +128,10 @@ func main() {
 		Service: &noteSvc,
 	}
 
+	productHandler := prodHandler.Handler{
+		Service: &productSvc,
+	}
+
 	router := httprouter.New()
 
 	// client routes
@@ -132,6 +148,14 @@ func main() {
 
 	// note routes
 	router.POST("/sales/:sale_id/notes", noteHandler.AddNote)
+	router.DELETE("/notes/:id", noteHandler.DeleteNote)
+
+	// product routes
+	router.POST("/products", productHandler.CreateProduct)
+	router.GET("/products", productHandler.GetAllProducts)
+	router.GET("/products/:id", productHandler.GetProductByID)
+	router.PUT("/products/:id", productHandler.UpdateProduct)
+	router.DELETE("/products/:id", productHandler.DeleteProduct)
 
 	// payment routes
 	router.POST("/payments", paymentHandler.CreatePayment)

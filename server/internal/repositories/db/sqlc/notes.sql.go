@@ -33,6 +33,15 @@ func (q *Queries) CreateNote(ctx context.Context, arg CreateNoteParams) (Note, e
 	return i, err
 }
 
+const deleteNote = `-- name: DeleteNote :exec
+DELETE FROM notes WHERE id = ?
+`
+
+func (q *Queries) DeleteNote(ctx context.Context, id int64) error {
+	_, err := q.db.ExecContext(ctx, deleteNote, id)
+	return err
+}
+
 const getNotesBySaleID = `-- name: GetNotesBySaleID :many
 SELECT id, content, sale_id, created_at, updated_at FROM notes WHERE sale_id = ? ORDER BY created_at DESC
 `

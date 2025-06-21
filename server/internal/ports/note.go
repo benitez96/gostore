@@ -7,9 +7,11 @@ import (
 type NoteService interface {
 	Create(content string, saleID string) (*domain.Note, error)
 	GetBySaleID(saleID string) ([]*domain.Note, error)
+	Delete(id string) error
 }
 
 type NoteRepository interface {
 	Create(content string, saleID string) (*domain.Note, error)
 	GetBySaleID(saleID string) ([]*domain.Note, error)
+	Delete(id string) error
 }

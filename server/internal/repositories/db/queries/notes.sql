@@ -4,4 +4,7 @@ VALUES (?, ?)
 RETURNING *;
 
 -- name: GetNotesBySaleID :many
-SELECT * FROM notes WHERE sale_id = ? ORDER BY created_at DESC; 
+SELECT * FROM notes WHERE sale_id = ? ORDER BY created_at DESC;
+
+-- name: DeleteNote :exec
+DELETE FROM notes WHERE id = ?; 

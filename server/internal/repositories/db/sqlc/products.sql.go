@@ -7,7 +7,140 @@ package sqlc
 
 import (
 	"context"
+	"database/sql"
 )
+
+const createProduct = `-- name: CreateProduct :one
+INSERT INTO products (name, cost, price, stock)
+VALUES (?, ?, ?, ?)
+RETURNING id, name, cost, price, stock, created_at, updated_at
+`
+
+type CreateProductParams struct {
+	Name  string
+	Cost  sql.NullFloat64
+	Price sql.NullFloat64
+	Stock int64
+}
+
+func (q *Queries) CreateProduct(ctx context.Context, arg CreateProductParams) (Product, error) {
+	row := q.db.QueryRowContext(ctx, createProduct,
+		arg.Name,
+		arg.Cost,
+		arg.Price,
+		arg.Stock,
+	)
+	var i Product
+	err := row.Scan(
+		&i.ID,
+		&i.Name,
+		&i.Cost,
+		&i.Price,
+		&i.Stock,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const deleteProduct = `-- name: DeleteProduct :exec
+DELETE FROM products WHERE id = ?
+`
+
+func (q *Queries) DeleteProduct(ctx context.Context, id int64) error {
+	_, err := q.db.ExecContext(ctx, deleteProduct, id)
+	return err
+}
+
+const getAllProducts = `-- name: GetAllProducts :many
+SELECT id, name, cost, price, stock, created_at, updated_at FROM products ORDER BY created_at DESC
+`
+
+func (q *Queries) GetAllProducts(ctx context.Context) ([]Product, error) {
+	rows, err := q.db.QueryContext(ctx, getAllProducts)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Product
+	for rows.Next() {
+		var i Product
+		if err := rows.Scan(
+			&i.ID,
+			&i.Name,
+			&i.Cost,
+			&i.Price,
+			&i.Stock,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getProductByID = `-- name: GetProductByID :one
+SELECT id, name, cost, price, stock, created_at, updated_at FROM products WHERE id = ?
+`
+
+func (q *Queries) GetProductByID(ctx context.Context, id int64) (Product, error) {
+	row := q.db.QueryRowContext(ctx, getProductByID, id)
+	var i Product
+	err := row.Scan(
+		&i.ID,
+		&i.Name,
+		&i.Cost,
+		&i.Price,
+		&i.Stock,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const updateProduct = `-- name: UpdateProduct :one
+UPDATE products
+SET name = ?, cost = ?, price = ?, stock = ?, updated_at = CURRENT_TIMESTAMP
+WHERE id = ?
+RETURNING id, name, cost, price, stock, created_at, updated_at
+`
+
+type UpdateProductParams struct {
+	Name  string
+	Cost  sql.NullFloat64
+	Price sql.NullFloat64
+	Stock int64
+	ID    int64
+}
+
+func (q *Queries) UpdateProduct(ctx context.Context, arg UpdateProductParams) (Product, error) {
+	row := q.db.QueryRowContext(ctx, updateProduct,
+		arg.Name,
+		arg.Cost,
+		arg.Price,
+		arg.Stock,
+		arg.ID,
+	)
+	var i Product
+	err := row.Scan(
+		&i.ID,
+		&i.Name,
+		&i.Cost,
+		&i.Price,
+		&i.Stock,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
 
 const updateProductStock = `-- name: UpdateProductStock :exec
 UPDATE products
