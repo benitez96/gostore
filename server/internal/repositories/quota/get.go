@@ -31,6 +31,7 @@ func (r *Repository) GetBySaleID(id string) ([]*domain.Quota, error) {
 			StateID:  int(q.StateID),
 			DueDate:  &q.DueDate,
 			SaleID:   fmt.Sprintf("%d", q.SaleID),
+			ClientID: fmt.Sprintf("%d", q.ClientID),
 			Payments: []*domain.Payment{},
 		})
 	}
@@ -60,6 +61,7 @@ func (r *Repository) GetByID(id string) (*domain.Quota, error) {
 		StateID:  int(quotaDB.StateID),
 		DueDate:  &quotaDB.DueDate,
 		SaleID:   fmt.Sprintf("%d", quotaDB.SaleID),
+		ClientID: fmt.Sprintf("%d", quotaDB.ClientID),
 		Payments: []*domain.Payment{},
 	}, nil
 }

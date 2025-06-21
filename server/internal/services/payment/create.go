@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/benitez96/gostore/internal/domain"
+	"github.com/benitez96/gostore/internal/utils"
 )
 
 func (s *Service) Create(payment *domain.Payment) error {
@@ -32,8 +33,7 @@ func (s *Service) Create(payment *domain.Payment) error {
 	}
 
 	if isPaid := totalPaid >= quota.Amount; isPaid {
-		stateID := 1
-		if err := s.QuotaRepo.UpdatePaymentStatus(quotaIDStr, isPaid, stateID); err != nil {
+		if err := s.QuotaRepo.UpdatePaymentStatus(quotaIDStr, isPaid, domain.StateOK); err != nil {
 			return err
 		}
 
@@ -56,7 +56,22 @@ func (s *Service) Create(payment *domain.Payment) error {
 		// If all quotas are paid, update the sale status
 		if allQuotasPaid {
 			saleID := quota.SaleID.(string)
-			if err := s.SaleRepo.UpdatePaymentStatus(saleID, true, 1); err != nil {
+			if err := s.SaleRepo.UpdatePaymentStatus(saleID, true, domain.StateOK); err != nil {
+				return err
+			}
+
+			// Get all sales for this client to check their states
+			clientSales, err := s.SaleRepo.GetByClientID(quota.ClientID.(string))
+			if err != nil {
+				return err
+			}
+
+			// Determine client state based on all their sales
+			clientStateID := utils.DetermineClientState(clientSales)
+
+			// Update client state
+			clientID := quota.ClientID.(string)
+			if err := s.ClientRepo.UpdateState(clientID, clientStateID); err != nil {
 				return err
 			}
 		}

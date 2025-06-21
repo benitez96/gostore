@@ -8,8 +8,9 @@ var _ ports.SaleService = &Service{}
 
 // Service is a struct that represents the service for the league entity.
 type Service struct {
-	Sr 	ports.SaleRepository
-	Spr	ports.SaleProductRepository
-	Qr 	ports.QuotaRepository
-	Pr 	ports.PaymentRepository
+	Sr         ports.SaleRepository
+	Spr        ports.SaleProductRepository
+	Qr         ports.QuotaRepository
+	Pr         ports.PaymentRepository
+	ClientRepo ports.ClientRepository
 }

@@ -31,6 +31,15 @@ func (q *Queries) CountClients(ctx context.Context, arg CountClientsParams) (int
 	return count, err
 }
 
+const deleteClient = `-- name: DeleteClient :exec
+DELETE FROM clients WHERE id = ?
+`
+
+func (q *Queries) DeleteClient(ctx context.Context, id int64) error {
+	_, err := q.db.ExecContext(ctx, deleteClient, id)
+	return err
+}
+
 const getClientByID = `-- name: GetClientByID :one
 SELECT 
   c.id, 
@@ -194,4 +203,45 @@ func (q *Queries) InsertClient(ctx context.Context, arg InsertClientParams) (Cli
 		&i.UpdatedAt,
 	)
 	return i, err
+}
+
+const updateClient = `-- name: UpdateClient :exec
+UPDATE clients SET name = ?, lastname = ?, dni = ?, email = ?, phone = ?, address = ? WHERE id = ?
+`
+
+type UpdateClientParams struct {
+	Name     string
+	Lastname string
+	Dni      string
+	Email    sql.NullString
+	Phone    sql.NullString
+	Address  sql.NullString
+	ID       int64
+}
+
+func (q *Queries) UpdateClient(ctx context.Context, arg UpdateClientParams) error {
+	_, err := q.db.ExecContext(ctx, updateClient,
+		arg.Name,
+		arg.Lastname,
+		arg.Dni,
+		arg.Email,
+		arg.Phone,
+		arg.Address,
+		arg.ID,
+	)
+	return err
+}
+
+const updateClientState = `-- name: UpdateClientState :exec
+UPDATE clients SET state_id = ? WHERE id = ?
+`
+
+type UpdateClientStateParams struct {
+	StateID int64
+	ID      int64
+}
+
+func (q *Queries) UpdateClientState(ctx context.Context, arg UpdateClientStateParams) error {
+	_, err := q.db.ExecContext(ctx, updateClientState, arg.StateID, arg.ID)
+	return err
 }

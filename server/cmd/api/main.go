@@ -18,6 +18,7 @@ import (
 	clientSvc "github.com/benitez96/gostore/internal/services/client"
 
 	// repositories
+
 	paymentRepository "github.com/benitez96/gostore/internal/repositories/payment"
 	quotaRepository "github.com/benitez96/gostore/internal/repositories/quota"
 	saleRepository "github.com/benitez96/gostore/internal/repositories/sale"
@@ -25,6 +26,11 @@ import (
 	paymentSvc "github.com/benitez96/gostore/internal/services/payment"
 	quotaSvc "github.com/benitez96/gostore/internal/services/quota"
 	saleSvc "github.com/benitez96/gostore/internal/services/sale"
+
+	noteRepository "github.com/benitez96/gostore/internal/repositories/note"
+	noteSvc "github.com/benitez96/gostore/internal/services/note"
+
+	noteHandler "github.com/benitez96/gostore/cmd/api/handlers/note"
 )
 
 func main() {
@@ -35,9 +41,14 @@ func main() {
 	}
 	defer dbConnection.Close()
 
-	saleRepository := saleRepository.Repository{
+	noteRepository := noteRepository.Repository{
 		Queries: sqlc.New(dbConnection),
-		DB:      dbConnection,
+	}
+
+	saleRepository := saleRepository.Repository{
+		Queries:  sqlc.New(dbConnection),
+		DB:       dbConnection,
+		NoteRepo: &noteRepository,
 	}
 
 	saleProductRepository := saleProductRepository.Repository{
@@ -53,21 +64,32 @@ func main() {
 		Queries: sqlc.New(dbConnection),
 		DB:      dbConnection,
 	}
+
+	clientRepository := clientRepository.Repository{
+		Queries: sqlc.New(dbConnection),
+	}
+
 	saleSvc := saleSvc.Service{
-		Sr:  &saleRepository,
-		Spr: &saleProductRepository,
-		Qr:  &quotaRepository,
-		Pr:  &paymentRepository,
+		Sr:         &saleRepository,
+		Spr:        &saleProductRepository,
+		Qr:         &quotaRepository,
+		Pr:         &paymentRepository,
+		ClientRepo: &clientRepository,
 	}
 
 	paymentSvc := paymentSvc.Service{
-		Repo:      &paymentRepository,
-		QuotaRepo: &quotaRepository,
-		SaleRepo:  &saleRepository,
+		Repo:       &paymentRepository,
+		QuotaRepo:  &quotaRepository,
+		SaleRepo:   &saleRepository,
+		ClientRepo: &clientRepository,
 	}
 
 	quotaSvc := quotaSvc.Service{
 		Repo: &quotaRepository,
+	}
+
+	noteSvc := noteSvc.Service{
+		Repo: &noteRepository,
 	}
 
 	saleHandler := saleHandler.Handler{
@@ -82,9 +104,6 @@ func main() {
 		Service: &quotaSvc,
 	}
 
-	clientRepository := clientRepository.Repository{
-		Queries: sqlc.New(dbConnection),
-	}
 	clientSvc := clientSvc.Service{
 		Repo:    &clientRepository,
 		SaleSvc: &saleSvc,
@@ -93,16 +112,26 @@ func main() {
 		Service: &clientSvc,
 	}
 
+	noteHandler := noteHandler.Handler{
+		Service: &noteSvc,
+	}
+
 	router := httprouter.New()
 
 	// client routes
 	router.POST("/clients", clientHandler.CreateClient)
 	router.GET("/clients", clientHandler.GetAllClients)
 	router.GET("/clients/:id", clientHandler.GetClientByID)
+	router.PUT("/clients/:id", clientHandler.UpdateClient)
+	router.DELETE("/clients/:id", clientHandler.DeleteClient)
 
 	// sale routes
 	router.POST("/sales", saleHandler.CreateSale)
 	router.GET("/sales/:id", saleHandler.GetByID)
+	router.DELETE("/sales/:id", saleHandler.DeleteSale)
+
+	// note routes
+	router.POST("/sales/:sale_id/notes", noteHandler.AddNote)
 
 	// payment routes
 	router.POST("/payments", paymentHandler.CreatePayment)

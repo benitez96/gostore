@@ -35,6 +35,15 @@ func (q *Queries) CreateSale(ctx context.Context, arg CreateSaleParams) (int64, 
 	return id, err
 }
 
+const deleteSale = `-- name: DeleteSale :exec
+DELETE FROM sales WHERE id = ?
+`
+
+func (q *Queries) DeleteSale(ctx context.Context, id int64) error {
+	_, err := q.db.ExecContext(ctx, deleteSale, id)
+	return err
+}
+
 const getSaleByID = `-- name: GetSaleByID :one
 SELECT id, description, amount, is_paid, state_id, client_id, date, created_at, updated_at FROM sales WHERE id = ?
 `

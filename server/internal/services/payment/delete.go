@@ -2,7 +2,9 @@ package payment
 
 import (
 	"fmt"
-	"time"
+
+	"github.com/benitez96/gostore/internal/domain"
+	"github.com/benitez96/gostore/internal/utils"
 )
 
 func (s *Service) Delete(paymentID string) error {
@@ -42,7 +44,7 @@ func (s *Service) Delete(paymentID string) error {
 	isPaid := totalPaid >= quota.Amount
 
 	// Determine state based on due date
-	stateID := determineQuotaState(quota.DueDate)
+	stateID := utils.DetermineQuotaState(quota.DueDate)
 
 	// Update quota payment status
 	if err := s.QuotaRepo.UpdatePaymentStatus(quotaIDStr, isPaid, stateID); err != nil {
@@ -68,28 +70,26 @@ func (s *Service) Delete(paymentID string) error {
 		// If any quota is unpaid, update the sale status
 		if anyQuotaUnpaid {
 			saleID := quota.SaleID.(string)
-			if err := s.SaleRepo.UpdatePaymentStatus(saleID, false, 2); err != nil { // Set to warning state
+			if err := s.SaleRepo.UpdatePaymentStatus(saleID, false, domain.StateWarning); err != nil {
+				return err
+			}
+
+			// Get all sales for this client to check their states
+			clientSales, err := s.SaleRepo.GetByClientID(quota.ClientID.(string))
+			if err != nil {
+				return err
+			}
+
+			// Determine client state based on all their sales
+			clientStateID := utils.DetermineClientState(clientSales)
+
+			// Update client state
+			clientID := quota.ClientID.(string)
+			if err := s.ClientRepo.UpdateState(clientID, clientStateID); err != nil {
 				return err
 			}
 		}
 	}
 
 	return nil
-}
-
-// Helper function to determine quota state based on due date
-func determineQuotaState(dueDate *time.Time) int {
-	if dueDate == nil {
-		return 1 // Default to OK if no due date
-	}
-
-	now := time.Now()
-	monthsPast := int(now.Sub(*dueDate).Hours() / 24 / 30)
-
-	if monthsPast >= 2 {
-		return 3 // Suspended - past 2 months
-	} else if monthsPast >= 1 {
-		return 2 // Warning - past 1 month
-	}
-	return 1 // OK - not past due
 }

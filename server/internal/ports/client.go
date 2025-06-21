@@ -2,13 +2,14 @@ package ports
 
 import (
 	"github.com/benitez96/gostore/internal/domain"
+	"github.com/benitez96/gostore/internal/dto"
 )
 
 // ClientService is the interface that have methods to interact with the client entity.
 type ClientService interface {
 	Create(client *domain.Client) error
 	Get(id string) (client *domain.Client, err error)
-	Update(client *domain.Client) (err error)
+	Update(id string, updateRequest *dto.UpdateClientRequest) error
 	GetAll(search string, limit, offset int) (clients *domain.Paginated[*domain.ClientSummary], err error)
 	Delete(id string) (err error)
 }
@@ -21,4 +22,5 @@ type ClientRepository interface {
 	Update(c *domain.Client) (err error)
 	Get(id string) (client *domain.Client, err error)
 	Delete(id string) (err error)
+	UpdateState(clientID string, stateID int) error
 }

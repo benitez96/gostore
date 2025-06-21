@@ -18,3 +18,6 @@ RETURNING id;
 
 -- name: UpdateSalePaymentStatus :exec
 UPDATE sales SET is_paid = ?, state_id = ? WHERE id = ?;
+
+-- name: DeleteSale :exec
+DELETE FROM sales WHERE id = ?;

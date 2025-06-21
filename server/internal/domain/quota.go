@@ -10,5 +10,6 @@ type Quota struct {
 	StateID  int        `json:"state"`
 	DueDate  *time.Time `json:"due_date"`
 	SaleID   any        `json:"sale_id"`
+	ClientID any        `json:"client_id"`
 	Payments []*Payment `json:"payments"`
 }

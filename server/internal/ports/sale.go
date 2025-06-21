@@ -9,6 +9,7 @@ type SaleService interface {
 	Create(dto *dto.CreateSaleDto) (int64, error)
 	GetByID(id string) (sale *domain.Sale, err error)
 	GetByClientID(id string) (sale []*domain.SaleSummary, err error)
+	Delete(saleID string) error
 }
 
 type SaleRepository interface {
@@ -16,4 +17,5 @@ type SaleRepository interface {
 	GetByID(id string) (sale *domain.Sale, err error)
 	GetByClientID(id string) (sale []*domain.SaleSummary, err error)
 	UpdatePaymentStatus(saleID string, isPaid bool, stateID int) error
+	Delete(saleID string) error
 }

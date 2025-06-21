@@ -44,3 +44,12 @@ SELECT
 FROM clients c
 INNER JOIN states s ON c.state_id = s.id
 WHERE c.id = ?;
+
+-- name: UpdateClientState :exec
+UPDATE clients SET state_id = ? WHERE id = ?;
+
+-- name: DeleteClient :exec
+DELETE FROM clients WHERE id = ?;
+
+-- name: UpdateClient :exec
+UPDATE clients SET name = ?, lastname = ?, dni = ?, email = ?, phone = ?, address = ? WHERE id = ?;

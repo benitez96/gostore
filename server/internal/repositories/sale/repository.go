@@ -12,6 +12,7 @@ import (
 var _ ports.SaleRepository = &Repository{}
 
 type Repository struct {
-	Queries *sqlc.Queries
-	DB *sql.DB
+	Queries  *sqlc.Queries
+	DB       *sql.DB
+	NoteRepo ports.NoteRepository
 }

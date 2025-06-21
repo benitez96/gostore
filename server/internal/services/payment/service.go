@@ -9,7 +9,8 @@ import (
 var _ ports.PaymentService = &Service{}
 
 type Service struct {
-	Repo      ports.PaymentRepository
-	QuotaRepo ports.QuotaRepository
-	SaleRepo  ports.SaleRepository
+	Repo       ports.PaymentRepository
+	QuotaRepo  ports.QuotaRepository
+	SaleRepo   ports.SaleRepository
+	ClientRepo ports.ClientRepository
 }

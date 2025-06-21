@@ -6,7 +6,6 @@ import (
 	"github.com/benitez96/gostore/internal/repositories/utils"
 )
 
-
 func (r *Repository) GetByID(id string) (sale *domain.Sale, err error) {
 	ctx, cancel := utils.GetContext()
 	defer cancel()
@@ -24,12 +23,27 @@ func (r *Repository) GetByID(id string) (sale *domain.Sale, err error) {
 	}
 
 	sale = &domain.Sale{
-		ID:        saleDB.ID,
+		ID:          saleDB.ID,
 		Description: saleDB.Description,
-		IsPaid: saleDB.IsPaid,
-		StateID: int(saleDB.StateID),
-		Date: &saleDB.Date,
-		Amount: saleDB.Amount,
+		IsPaid:      saleDB.IsPaid,
+		StateID:     int(saleDB.StateID),
+		Date:        &saleDB.Date,
+		Amount:      saleDB.Amount,
+		ClientID:    saleDB.ClientID,
+	}
+
+	// Fetch notes for this sale
+	if r.NoteRepo != nil {
+		notes, err := r.NoteRepo.GetBySaleID(id)
+		if err != nil {
+			// Don't fail the entire request if notes can't be fetched
+			// Just continue with empty notes
+			sale.Notes = []*domain.Note{}
+		} else {
+			sale.Notes = notes
+		}
+	} else {
+		sale.Notes = []*domain.Note{}
 	}
 
 	return sale, nil
@@ -59,7 +73,3 @@ func (r *Repository) GetByClientID(id string) (sales []*domain.SaleSummary, err 
 
 	return result, nil
 }
-
-
-
-

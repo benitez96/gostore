@@ -4,14 +4,14 @@ import (
 	"github.com/benitez96/gostore/internal/repositories/utils"
 )
 
-func (r *Repository) Delete(id string) error {
+func (r *Repository) Delete(saleID string) error {
 	ctx, cancel := utils.GetContext()
 	defer cancel()
 
-	parsedID, err := utils.ParseToInt64(id)
+	parsedID, err := utils.ParseToInt64(saleID)
 	if err != nil {
 		return err
 	}
 
-	return r.Queries.DeleteClient(ctx, parsedID)
+	return r.Queries.DeleteSale(ctx, parsedID)
 }
