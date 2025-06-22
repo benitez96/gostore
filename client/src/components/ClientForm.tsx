@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter } from "@heroui/modal";
 import { Button } from "@heroui/button";
 import { Input } from "@heroui/input";
 import { RiCloseLine } from "react-icons/ri";
@@ -131,103 +132,99 @@ export default function ClientForm({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-content1 rounded-lg p-6 w-full max-w-2xl mx-4 max-h-[90vh] overflow-y-auto relative">
-        {/* Close button */}
-        <button
-          onClick={onClose}
-          className="absolute top-4 right-4 text-default-400 hover:text-default-600 transition-colors"
-          disabled={isLoading}
-        >
-          <RiCloseLine className="text-xl" />
-        </button>
-
-        <form onSubmit={handleSubmit}>
-          <div className="mb-6 pr-8">
-            <div className="flex items-center gap-2 mb-2">
-              {title}
-            </div>
-            <p className="text-sm text-default-500">
-              Complete la información del cliente
-            </p>
+    <Modal isOpen={isOpen} onClose={onClose} size="2xl" scrollBehavior="inside">
+      <ModalContent>
+        <ModalHeader className="flex flex-col gap-1">
+          <div className="flex items-center gap-2">
+            {title}
           </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-            {/* Nombre */}
-            <Input
-              label="Nombre"
-              placeholder="Ingrese el nombre"
-              value={formData.name}
-              onChange={handleInputChange('name')}
-              isInvalid={!!errors.name}
-              errorMessage={errors.name}
-              isRequired
-            />
-
-            {/* Apellido */}
-            <Input
-              label="Apellido"
-              placeholder="Ingrese el apellido"
-              value={formData.lastname}
-              onChange={handleInputChange('lastname')}
-              isInvalid={!!errors.lastname}
-              errorMessage={errors.lastname}
-              isRequired
-            />
-
-            {/* DNI */}
-            <Input
-              label="DNI"
-              placeholder="Ingrese el DNI"
-              value={formData.dni}
-              onChange={handleInputChange('dni')}
-              isInvalid={!!errors.dni}
-              errorMessage={errors.dni}
-              isRequired
-            />
-
-            {/* Email */}
-            <Input
-              label="Email"
-              placeholder="Ingrese el email"
-              type="email"
-              value={formData.email}
-              onChange={handleInputChange('email')}
-              isInvalid={!!errors.email}
-              errorMessage={errors.email}
-            />
-
-            {/* Teléfono */}
-            <Input
-              label="Teléfono"
-              placeholder="Ingrese el teléfono"
-              value={formData.phone}
-              onChange={handleInputChange('phone')}
-              isInvalid={!!errors.phone}
-              errorMessage={errors.phone}
-            />
-
-            {/* Dirección */}
-            <div className="md:col-span-2">
+          <p className="text-sm text-default-500">
+            Complete la información del cliente
+          </p>
+        </ModalHeader>
+        <ModalBody>
+          <form id="client-form" onSubmit={handleSubmit} className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Nombre */}
               <Input
-                label="Dirección"
-                placeholder="Ingrese la dirección completa"
-                value={formData.address}
-                onChange={handleInputChange('address')}
+                label="Nombre"
+                placeholder="Ingrese el nombre"
+                value={formData.name}
+                onChange={handleInputChange('name')}
+                isInvalid={!!errors.name}
+                errorMessage={errors.name}
+                isRequired
               />
-            </div>
-          </div>
 
-          <div className="flex justify-end gap-3">
-            <Button color="default" variant="light" onPress={onClose}>
-              Cancelar
-            </Button>
-            <Button color="primary" type="submit" isLoading={isLoading}>
-              {submitText}
-            </Button>
-          </div>
-        </form>
-      </div>
-    </div>
+              {/* Apellido */}
+              <Input
+                label="Apellido"
+                placeholder="Ingrese el apellido"
+                value={formData.lastname}
+                onChange={handleInputChange('lastname')}
+                isInvalid={!!errors.lastname}
+                errorMessage={errors.lastname}
+                isRequired
+              />
+
+              {/* DNI */}
+              <Input
+                label="DNI"
+                placeholder="Ingrese el DNI"
+                value={formData.dni}
+                onChange={handleInputChange('dni')}
+                isInvalid={!!errors.dni}
+                errorMessage={errors.dni}
+                isRequired
+              />
+
+              {/* Email */}
+              <Input
+                label="Email"
+                placeholder="Ingrese el email"
+                type="email"
+                value={formData.email}
+                onChange={handleInputChange('email')}
+                isInvalid={!!errors.email}
+                errorMessage={errors.email}
+              />
+
+              {/* Teléfono */}
+              <Input
+                label="Teléfono"
+                placeholder="Ingrese el teléfono"
+                value={formData.phone}
+                onChange={handleInputChange('phone')}
+                isInvalid={!!errors.phone}
+                errorMessage={errors.phone}
+              />
+
+              {/* Dirección */}
+              <div className="md:col-span-2">
+                <Input
+                  label="Dirección"
+                  placeholder="Ingrese la dirección completa"
+                  value={formData.address}
+                  onChange={handleInputChange('address')}
+                />
+              </div>
+            </div>
+          </form>
+        </ModalBody>
+        <ModalFooter>
+          <Button color="default" variant="light" onPress={onClose}>
+            Cancelar
+          </Button>
+          <Button 
+            color="primary" 
+            type="submit" 
+            form="client-form"
+            isLoading={isLoading}
+          >
+            {submitText}
+          </Button>
+        </ModalFooter>
+      </ModalContent>
+    </Modal>
   );
 } 

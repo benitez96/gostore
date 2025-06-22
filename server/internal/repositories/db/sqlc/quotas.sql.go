@@ -35,6 +35,41 @@ func (q *Queries) CreateQuota(ctx context.Context, arg CreateQuotaParams) error 
 	return err
 }
 
+const getClientsBySaleStates = `-- name: GetClientsBySaleStates :many
+SELECT DISTINCT c.id, c.state_id
+FROM clients c
+INNER JOIN sales s ON c.id = s.client_id
+WHERE s.is_paid = 0
+`
+
+type GetClientsBySaleStatesRow struct {
+	ID      int64
+	StateID int64
+}
+
+func (q *Queries) GetClientsBySaleStates(ctx context.Context) ([]GetClientsBySaleStatesRow, error) {
+	rows, err := q.db.QueryContext(ctx, getClientsBySaleStates)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetClientsBySaleStatesRow
+	for rows.Next() {
+		var i GetClientsBySaleStatesRow
+		if err := rows.Scan(&i.ID, &i.StateID); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const getQuotaByID = `-- name: GetQuotaByID :one
 SELECT id, number, amount, due_date, is_paid, state_id, sale_id, client_id, created_at, updated_at, "foreign" FROM quotas WHERE id = ?
 `
@@ -97,6 +132,101 @@ func (q *Queries) GetSaleQuotas(ctx context.Context, saleID int64) ([]Quota, err
 	return items, nil
 }
 
+const getSalesByQuotaStates = `-- name: GetSalesByQuotaStates :many
+SELECT DISTINCT s.id, s.client_id, s.state_id
+FROM sales s
+INNER JOIN quotas q ON s.id = q.sale_id
+WHERE q.is_paid = 0
+`
+
+type GetSalesByQuotaStatesRow struct {
+	ID       int64
+	ClientID int64
+	StateID  int64
+}
+
+func (q *Queries) GetSalesByQuotaStates(ctx context.Context) ([]GetSalesByQuotaStatesRow, error) {
+	rows, err := q.db.QueryContext(ctx, getSalesByQuotaStates)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetSalesByQuotaStatesRow
+	for rows.Next() {
+		var i GetSalesByQuotaStatesRow
+		if err := rows.Scan(&i.ID, &i.ClientID, &i.StateID); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getUnpaidQuotasForStateUpdate = `-- name: GetUnpaidQuotasForStateUpdate :many
+SELECT id, due_date, is_paid, state_id, sale_id, client_id 
+FROM quotas 
+WHERE is_paid = 0
+`
+
+type GetUnpaidQuotasForStateUpdateRow struct {
+	ID       int64
+	DueDate  time.Time
+	IsPaid   sql.NullBool
+	StateID  int64
+	SaleID   int64
+	ClientID int64
+}
+
+func (q *Queries) GetUnpaidQuotasForStateUpdate(ctx context.Context) ([]GetUnpaidQuotasForStateUpdateRow, error) {
+	rows, err := q.db.QueryContext(ctx, getUnpaidQuotasForStateUpdate)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetUnpaidQuotasForStateUpdateRow
+	for rows.Next() {
+		var i GetUnpaidQuotasForStateUpdateRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.DueDate,
+			&i.IsPaid,
+			&i.StateID,
+			&i.SaleID,
+			&i.ClientID,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const updateClientStateBulk = `-- name: UpdateClientStateBulk :exec
+UPDATE clients SET state_id = ? WHERE id = ?
+`
+
+type UpdateClientStateBulkParams struct {
+	StateID int64
+	ID      int64
+}
+
+func (q *Queries) UpdateClientStateBulk(ctx context.Context, arg UpdateClientStateBulkParams) error {
+	_, err := q.db.ExecContext(ctx, updateClientStateBulk, arg.StateID, arg.ID)
+	return err
+}
+
 const updateQuota = `-- name: UpdateQuota :exec
 UPDATE quotas SET amount = ?, due_date = ? WHERE id = ?
 `
@@ -124,5 +254,33 @@ type UpdateQuotaPaymentStatusParams struct {
 
 func (q *Queries) UpdateQuotaPaymentStatus(ctx context.Context, arg UpdateQuotaPaymentStatusParams) error {
 	_, err := q.db.ExecContext(ctx, updateQuotaPaymentStatus, arg.IsPaid, arg.StateID, arg.ID)
+	return err
+}
+
+const updateQuotaStateBulk = `-- name: UpdateQuotaStateBulk :exec
+UPDATE quotas SET state_id = ? WHERE id = ?
+`
+
+type UpdateQuotaStateBulkParams struct {
+	StateID int64
+	ID      int64
+}
+
+func (q *Queries) UpdateQuotaStateBulk(ctx context.Context, arg UpdateQuotaStateBulkParams) error {
+	_, err := q.db.ExecContext(ctx, updateQuotaStateBulk, arg.StateID, arg.ID)
+	return err
+}
+
+const updateSaleStateBulk = `-- name: UpdateSaleStateBulk :exec
+UPDATE sales SET state_id = ? WHERE id = ?
+`
+
+type UpdateSaleStateBulkParams struct {
+	StateID int64
+	ID      int64
+}
+
+func (q *Queries) UpdateSaleStateBulk(ctx context.Context, arg UpdateSaleStateBulkParams) error {
+	_, err := q.db.ExecContext(ctx, updateSaleStateBulk, arg.StateID, arg.ID)
 	return err
 }

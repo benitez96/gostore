@@ -88,6 +88,7 @@ export interface ClientsParams {
   limit?: number;
   offset?: number;
   search?: string;
+  signal?: AbortSignal;
 }
 
 export const clientsApi = {
@@ -96,10 +97,10 @@ export const clientsApi = {
     const searchParams = new URLSearchParams();
     
     if (params.limit) searchParams.append('limit', params.limit.toString());
-    if (params.offset) searchParams.append('offset', params.offset.toString());
+    if (params.offset !== undefined) searchParams.append('offset', params.offset.toString());
     if (params.search) searchParams.append('search', params.search);
     
-    const response = await api.get(`/api/clients?${searchParams}`);
+    const response = await api.get(`/api/clients?${searchParams}`, { signal: params.signal });
     return response.data;
   },
 

@@ -2,6 +2,7 @@ package repositories
 
 import (
 	"database/sql"
+	"fmt"
 
 	"github.com/benitez96/gostore/internal/domain"
 	"github.com/benitez96/gostore/internal/repositories/db/sqlc"
@@ -12,9 +13,19 @@ func (r *Repository) Update(c *domain.Client) (err error) {
 	ctx, cancel := utils.GetContext()
 	defer cancel()
 
-	parsedID, err := utils.ParseToInt64(c.ID.(string))
-	if err != nil {
-		return err
+	var parsedID int64
+
+	// Handle different ID types
+	switch id := c.ID.(type) {
+	case int64:
+		parsedID = id
+	case string:
+		parsedID, err = utils.ParseToInt64(id)
+		if err != nil {
+			return err
+		}
+	default:
+		return fmt.Errorf("unsupported ID type: %T", c.ID)
 	}
 
 	return r.Queries.UpdateClient(ctx, sqlc.UpdateClientParams{

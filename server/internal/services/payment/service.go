@@ -2,6 +2,7 @@ package payment
 
 import (
 	"github.com/benitez96/gostore/internal/ports"
+	stateUpdater "github.com/benitez96/gostore/internal/services/state-updater"
 )
 
 // Make sure Service implements ports.PaymentService
@@ -9,8 +10,9 @@ import (
 var _ ports.PaymentService = &Service{}
 
 type Service struct {
-	Repo       ports.PaymentRepository
-	QuotaRepo  ports.QuotaRepository
-	SaleRepo   ports.SaleRepository
-	ClientRepo ports.ClientRepository
+	Repo         ports.PaymentRepository
+	QuotaRepo    ports.QuotaRepository
+	SaleRepo     ports.SaleRepository
+	ClientRepo   ports.ClientRepository
+	StateUpdater *stateUpdater.Service
 }

@@ -2,7 +2,7 @@ import { Button } from "@heroui/button";
 import { Link } from "@heroui/link";
 import { title, subtitle } from "@/components/primitives";
 import DefaultLayout from "@/layouts/default";
-import { RiDonutChartLine, RiUserLine, RiShoppingBagLine } from "react-icons/ri";
+import { RiDonutChartLine, RiUserLine, RiShoppingBagLine, RiHomeLine } from "react-icons/ri";
 
 export default function IndexPage() {
   const cards = [
@@ -31,41 +31,50 @@ export default function IndexPage() {
 
   return (
     <DefaultLayout>
-      <section className="flex flex-col items-center justify-center gap-8 py-8 md:py-10">
-        <div className="inline-block max-w-lg text-center justify-center">
-          <h1 className={title()}>Bienvenido a&nbsp;</h1>
-          <h1 className={title({ color: "violet" })}>GoStore</h1>
-          <div className={subtitle({ class: "mt-4" })}>
-            Sistema de gestión de ventas
+      <section className="flex flex-col gap-6">
+        {/* Header con título */}
+        <div className="flex items-center justify-center max-w-7xl w-full px-4">
+          <div className="flex items-center gap-3">
+            <div className="p-3 bg-gradient-to-br from-primary-500 to-primary-600 rounded-xl">
+              <RiHomeLine className="text-white text-2xl" />
+            </div>
+            <div className="text-center">
+              <h1 className="text-3xl font-bold bg-gradient-to-r from-primary-600 to-secondary-600 bg-clip-text text-transparent">
+                Bienvenido a GoStore
+              </h1>
+              <p className="text-default-500">Sistema de gestión de ventas</p>
+            </div>
           </div>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 max-w-4xl w-full px-4">
-          {cards.map((card) => {
-            const IconComponent = card.icon;
-            return (
-              <div key={card.href} className="bg-content1 border border-default-200 rounded-lg p-6 shadow-sm hover:shadow-md transition-shadow">
-                <div className="mb-4 flex items-center gap-3">
-                  <IconComponent className="text-2xl text-primary" />
-                  <h3 className="text-lg font-semibold text-foreground">{card.title}</h3>
+        <div className="flex justify-center">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 max-w-4xl w-full px-4">
+            {cards.map((card) => {
+              const IconComponent = card.icon;
+              return (
+                <div key={card.href} className="bg-content1 border border-default-200 rounded-lg p-6 shadow-sm hover:shadow-md transition-shadow">
+                  <div className="mb-4 flex items-center gap-3">
+                    <IconComponent className="text-2xl text-primary" />
+                    <h3 className="text-lg font-semibold text-foreground">{card.title}</h3>
+                  </div>
+                  <div className="mb-6">
+                    <p className="text-sm text-default-500">{card.description}</p>
+                  </div>
+                  <div>
+                    <Button
+                      as={Link}
+                      href={card.href}
+                      color={card.color}
+                      variant="flat"
+                      className="w-full"
+                    >
+                      Ir a {card.title}
+                    </Button>
+                  </div>
                 </div>
-                <div className="mb-6">
-                  <p className="text-sm text-default-500">{card.description}</p>
-                </div>
-                <div>
-                  <Button
-                    as={Link}
-                    href={card.href}
-                    color={card.color}
-                    variant="flat"
-                    className="w-full"
-                  >
-                    Ir a {card.title}
-                  </Button>
-                </div>
-              </div>
-            );
-          })}
+              );
+            })}
+          </div>
         </div>
       </section>
     </DefaultLayout>

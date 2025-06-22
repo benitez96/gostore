@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"net/http"
@@ -35,7 +36,36 @@ import (
 
 	productRepository "github.com/benitez96/gostore/internal/repositories/product"
 	productSvc "github.com/benitez96/gostore/internal/services/product"
+
+	chartRepository "github.com/benitez96/gostore/internal/repositories/chart"
+	chartSvc "github.com/benitez96/gostore/internal/services/chart"
+
+	chartHandler "github.com/benitez96/gostore/cmd/api/handlers/chart"
+
+	workerHandler "github.com/benitez96/gostore/cmd/api/handlers/worker"
+	workerSvc "github.com/benitez96/gostore/internal/services/worker"
+
+	stateUpdaterSvc "github.com/benitez96/gostore/internal/services/state-updater"
 )
+
+// CORS middleware
+func enableCORS(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Allow requests from the frontend
+		w.Header().Set("Access-Control-Allow-Origin", "http://localhost:5173")
+		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
+		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
+		w.Header().Set("Access-Control-Allow-Credentials", "true")
+
+		// Handle preflight requests
+		if r.Method == "OPTIONS" {
+			w.WriteHeader(http.StatusOK)
+			return
+		}
+
+		next.ServeHTTP(w, r)
+	})
+}
 
 func main() {
 
@@ -77,23 +107,38 @@ func main() {
 		Queries: sqlc.New(dbConnection),
 	}
 
+	chartRepository := chartRepository.Repository{
+		Queries: sqlc.New(dbConnection),
+	}
+
+	// Inicializar el StateUpdater service
+	stateUpdaterSvc := stateUpdaterSvc.Service{
+		QuotaRepo:   &quotaRepository,
+		SaleRepo:    &saleRepository,
+		ClientRepo:  &clientRepository,
+		PaymentRepo: &paymentRepository,
+	}
+
 	saleSvc := saleSvc.Service{
-		Sr:         &saleRepository,
-		Spr:        &saleProductRepository,
-		Qr:         &quotaRepository,
-		Pr:         &paymentRepository,
-		ClientRepo: &clientRepository,
+		Sr:           &saleRepository,
+		Spr:          &saleProductRepository,
+		Qr:           &quotaRepository,
+		Pr:           &paymentRepository,
+		ClientRepo:   &clientRepository,
+		StateUpdater: &stateUpdaterSvc,
 	}
 
 	paymentSvc := paymentSvc.Service{
-		Repo:       &paymentRepository,
-		QuotaRepo:  &quotaRepository,
-		SaleRepo:   &saleRepository,
-		ClientRepo: &clientRepository,
+		Repo:         &paymentRepository,
+		QuotaRepo:    &quotaRepository,
+		SaleRepo:     &saleRepository,
+		ClientRepo:   &clientRepository,
+		StateUpdater: &stateUpdaterSvc,
 	}
 
 	quotaSvc := quotaSvc.Service{
-		Repo: &quotaRepository,
+		Repo:         &quotaRepository,
+		StateUpdater: &stateUpdaterSvc,
 	}
 
 	noteSvc := noteSvc.Service{
@@ -102,6 +147,15 @@ func main() {
 
 	productSvc := productSvc.Service{
 		Repo: &productRepository,
+	}
+
+	chartSvc := chartSvc.Service{
+		Repo: &chartRepository,
+	}
+
+	// Inicializar el worker service
+	workerSvc := workerSvc.Service{
+		Queries: sqlc.New(dbConnection),
 	}
 
 	saleHandler := saleHandler.Handler{
@@ -132,38 +186,62 @@ func main() {
 		Service: &productSvc,
 	}
 
+	chartHandler := chartHandler.Handler{
+		Service: &chartSvc,
+	}
+
+	workerHandler := workerHandler.Handler{
+		Service: &workerSvc,
+	}
+
 	router := httprouter.New()
 
 	// client routes
-	router.POST("/clients", clientHandler.CreateClient)
-	router.GET("/clients", clientHandler.GetAllClients)
-	router.GET("/clients/:id", clientHandler.GetClientByID)
-	router.PUT("/clients/:id", clientHandler.UpdateClient)
-	router.DELETE("/clients/:id", clientHandler.DeleteClient)
+	router.POST("/api/clients", clientHandler.CreateClient)
+	router.GET("/api/clients", clientHandler.GetAllClients)
+	router.GET("/api/clients/:id", clientHandler.GetClientByID)
+	router.PUT("/api/clients/:id", clientHandler.UpdateClient)
+	router.DELETE("/api/clients/:id", clientHandler.DeleteClient)
 
 	// sale routes
-	router.POST("/sales", saleHandler.CreateSale)
-	router.GET("/sales/:id", saleHandler.GetByID)
-	router.DELETE("/sales/:id", saleHandler.DeleteSale)
+	router.POST("/api/sales", saleHandler.CreateSale)
+	router.GET("/api/sales/:id", saleHandler.GetByID)
+	router.DELETE("/api/sales/:id", saleHandler.DeleteSale)
 
 	// note routes
-	router.POST("/sales/:sale_id/notes", noteHandler.AddNote)
-	router.DELETE("/notes/:id", noteHandler.DeleteNote)
+	router.POST("/api/sales/:sale_id/notes", noteHandler.AddNote)
+	router.DELETE("/api/notes/:id", noteHandler.DeleteNote)
 
 	// product routes
-	router.POST("/products", productHandler.CreateProduct)
-	router.GET("/products", productHandler.GetAllProducts)
-	router.GET("/products/:id", productHandler.GetProductByID)
-	router.PUT("/products/:id", productHandler.UpdateProduct)
-	router.DELETE("/products/:id", productHandler.DeleteProduct)
+	router.POST("/api/products", productHandler.CreateProduct)
+	router.GET("/api/products", productHandler.GetAllProducts)
+	router.GET("/api/products/:id", productHandler.GetProductByID)
+	router.PUT("/api/products/:id", productHandler.UpdateProduct)
+	router.DELETE("/api/products/:id", productHandler.DeleteProduct)
+
+	// chart routes
+	router.GET("/api/charts/quotas/monthly-summary", chartHandler.GetQuotaMonthlySummary)
+	router.GET("/api/charts/clients/status-count", chartHandler.GetClientStatusCount)
+	router.GET("/api/charts/dashboard-stats", chartHandler.GetDashboardStats)
 
 	// payment routes
-	router.POST("/payments", paymentHandler.CreatePayment)
-	router.DELETE("/payments/:id", paymentHandler.DeletePayment)
+	router.POST("/api/payments", paymentHandler.CreatePayment)
+	router.DELETE("/api/payments/:id", paymentHandler.DeletePayment)
 
 	// quota routes
-	router.PUT("/quotas/:id", quotaHandler.UpdateQuota)
+	router.PUT("/api/quotas/:id", quotaHandler.UpdateQuota)
+
+	// worker routes
+	router.POST("/api/worker/update-states", workerHandler.RunStateUpdate)
+
+	// Iniciar el worker en una goroutine separada
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	go func() {
+		workerSvc.RunStateUpdateWorker(ctx)
+	}()
 
 	fmt.Println("🚀 Starting server on port 8080")
-	log.Fatal(http.ListenAndServe(":8080", router))
+	log.Fatal(http.ListenAndServe(":8080", enableCORS(router)))
 }
