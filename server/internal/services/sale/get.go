@@ -1,12 +1,34 @@
 package sale
 
 import (
+	"fmt"
+	"strconv"
 	"sync"
 
 	"github.com/benitez96/gostore/internal/domain"
 )
 
-func (s Service) GetByClientID(id string) (sale []*domain.SaleSummary, err error){
+// safeToString safely converts an interface{} value to string
+func safeToString(value any) string {
+	if value == nil {
+		return ""
+	}
+
+	switch v := value.(type) {
+	case string:
+		return v
+	case int64:
+		return strconv.FormatInt(v, 10)
+	case int:
+		return strconv.Itoa(v)
+	case float64:
+		return strconv.FormatFloat(v, 'f', 0, 64)
+	default:
+		return fmt.Sprintf("%v", v)
+	}
+}
+
+func (s Service) GetByClientID(id string) (sale []*domain.SaleSummary, err error) {
 	return s.Sr.GetByClientID(id)
 }
 
@@ -66,7 +88,7 @@ func (s Service) GetByID(id string) (*domain.Sale, error) {
 
 		go func() {
 			defer pwg.Done()
-			paymentDB, err := s.Pr.GetByQuotaID(q.ID.(string))
+			paymentDB, err := s.Pr.GetByQuotaID(safeToString(q.ID))
 			if err != nil {
 				// si hay error, simplemente lo ignoramos o logueamos; podés personalizar esto
 				return

@@ -8,6 +8,26 @@ import (
 	"github.com/benitez96/gostore/internal/repositories/utils"
 )
 
+// safeToFloat64 safely converts an interface{} value to float64
+func safeToFloat64(value any) float64 {
+	if value == nil {
+		return 0.0
+	}
+
+	switch v := value.(type) {
+	case float64:
+		return v
+	case int64:
+		return float64(v)
+	case int:
+		return float64(v)
+	case float32:
+		return float64(v)
+	default:
+		return 0.0
+	}
+}
+
 func (r *Repository) GetQuotaMonthlySummary(year time.Time) ([]*domain.QuotaMonthlySummary, error) {
 	ctx, cancel := utils.GetContext()
 	defer cancel()
@@ -143,7 +163,7 @@ func (r *Repository) GetDashboardStats() (*domain.DashboardStats, error) {
 			errChan <- err
 			return
 		}
-		stats.TotalRevenue = total.(float64)
+		stats.TotalRevenue = safeToFloat64(total)
 	}()
 
 	go func() {
@@ -153,7 +173,7 @@ func (r *Repository) GetDashboardStats() (*domain.DashboardStats, error) {
 			errChan <- err
 			return
 		}
-		stats.PendingAmount = pending.(float64)
+		stats.PendingAmount = safeToFloat64(pending)
 	}()
 
 	go func() {
@@ -163,7 +183,7 @@ func (r *Repository) GetDashboardStats() (*domain.DashboardStats, error) {
 			errChan <- err
 			return
 		}
-		stats.CollectedThisMonth = collected.(float64)
+		stats.CollectedThisMonth = safeToFloat64(collected)
 	}()
 
 	go func() {
@@ -173,7 +193,7 @@ func (r *Repository) GetDashboardStats() (*domain.DashboardStats, error) {
 			errChan <- err
 			return
 		}
-		stats.QuotasDueThisMonth = quotasDue.(float64)
+		stats.QuotasDueThisMonth = safeToFloat64(quotasDue)
 	}()
 
 	go func() {
@@ -183,7 +203,7 @@ func (r *Repository) GetDashboardStats() (*domain.DashboardStats, error) {
 			errChan <- err
 			return
 		}
-		stats.CollectedFromQuotasDueThisMonth = collectedFromQuotas.(float64)
+		stats.CollectedFromQuotasDueThisMonth = safeToFloat64(collectedFromQuotas)
 	}()
 
 	go func() {
@@ -193,7 +213,7 @@ func (r *Repository) GetDashboardStats() (*domain.DashboardStats, error) {
 			errChan <- err
 			return
 		}
-		stats.QuotasDueNextMonth = quotasDueNext.(float64)
+		stats.QuotasDueNextMonth = safeToFloat64(quotasDueNext)
 	}()
 
 	go func() {

@@ -160,6 +160,36 @@ function SaleDetails({ saleId }: { saleId: string }) {
     queryClient.invalidateQueries({ queryKey: ["client"] });
   };
 
+  const downloadPaymentReceipt = async (paymentId: string | number) => {
+    try {
+      const response = await api.post(
+        "/api/pdf/generate-receipt",
+        { payment_id: paymentId },
+        { responseType: "blob" }
+      );
+      // Crear un enlace para descargar el archivo
+      const url = window.URL.createObjectURL(new Blob([response.data], { type: "application/pdf" }));
+      const link = document.createElement("a");
+      link.href = url;
+      link.setAttribute("download", `comprobante_pago_${paymentId}.pdf`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+      addToast({
+        title: "Comprobante generado",
+        description: "El comprobante se descargó correctamente.",
+        color: "success",
+      });
+    } catch (error) {
+      addToast({
+        title: "Error al generar comprobante",
+        description: "No se pudo descargar el comprobante. Inténtalo de nuevo.",
+        color: "danger",
+      });
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="flex justify-center items-center py-8">
@@ -348,6 +378,14 @@ function SaleDetails({ saleId }: { saleId: string }) {
                             <span className="text-default-500">
                               {payment.date ? formatDate(payment.date) : ""}
                             </span>
+                            <Tooltip content="Descargar comprobante">
+                              <span
+                                className="text-lg text-primary cursor-pointer active:opacity-50"
+                                onClick={() => downloadPaymentReceipt(payment.id)}
+                              >
+                                <LiaFileInvoiceDollarSolid />
+                              </span>
+                            </Tooltip>
                             <Tooltip content="Eliminar pago">
                               <span className="text-lg text-danger cursor-pointer active:opacity-50">
                                 <LiaTrashAltSolid onClick={() => handleDeletePayment(payment, quota)} />

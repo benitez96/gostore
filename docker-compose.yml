@@ -1,0 +1,25 @@
+version: '3.8'
+
+services:
+  # Contenedor para wkhtmltopdf (HTML a PDF)
+  wkhtmltopdf:
+    build:
+      context: ./docker/wkhtmltopdf
+      dockerfile: Dockerfile
+    container_name: wkhtmltopdf-service
+    user: "1000:1000"  # Usuario sin privilegios
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
+    tmpfs:
+      - /tmp:noexec,nosuid,size=100m
+    networks:
+      - pdf-network
+    profiles:
+      - security  # Solo se levanta cuando se especifica el perfil
+    # No necesitamos exponer puerto ya que ejecutaremos wkhtmltopdf directamente
+    # command: ["--disable-smart-shrinking", "--print-media-type", "--no-outline", "--disable-javascript"]
+
+networks:
+  pdf-network:
+    driver: bridge 

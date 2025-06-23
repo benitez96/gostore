@@ -1,6 +1,9 @@
 package state_updater
 
 import (
+	"fmt"
+	"strconv"
+
 	"github.com/benitez96/gostore/internal/domain"
 	"github.com/benitez96/gostore/internal/ports"
 	"github.com/benitez96/gostore/internal/utils"
@@ -11,6 +14,26 @@ type Service struct {
 	SaleRepo    ports.SaleRepository
 	ClientRepo  ports.ClientRepository
 	PaymentRepo ports.PaymentRepository
+}
+
+// safeToString safely converts an interface{} value to string
+func safeToString(value any) string {
+	if value == nil {
+		return ""
+	}
+
+	switch v := value.(type) {
+	case string:
+		return v
+	case int64:
+		return strconv.FormatInt(v, 10)
+	case int:
+		return strconv.Itoa(v)
+	case float64:
+		return strconv.FormatFloat(v, 'f', 0, 64)
+	default:
+		return fmt.Sprintf("%v", v)
+	}
 }
 
 // UpdateQuotaStateAndPropagate actualiza el estado de una cuota y propaga los cambios
@@ -36,12 +59,12 @@ func (s *Service) UpdateQuotaStateAndPropagate(quotaID string) error {
 	}
 
 	// Propagar cambios a la venta
-	if err := s.updateSaleState(quota.SaleID.(string)); err != nil {
+	if err := s.updateSaleState(safeToString(quota.SaleID)); err != nil {
 		return err
 	}
 
 	// Propagar cambios al cliente
-	if err := s.updateClientState(quota.ClientID.(string)); err != nil {
+	if err := s.updateClientState(safeToString(quota.ClientID)); err != nil {
 		return err
 	}
 
@@ -103,7 +126,7 @@ func (s *Service) UpdateSaleStateAndPropagate(saleID string) error {
 		return err
 	}
 
-	if err := s.updateClientState(sale.ClientID.(string)); err != nil {
+	if err := s.updateClientState(safeToString(sale.ClientID)); err != nil {
 		return err
 	}
 

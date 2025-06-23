@@ -46,6 +46,9 @@ import (
 	workerSvc "github.com/benitez96/gostore/internal/services/worker"
 
 	stateUpdaterSvc "github.com/benitez96/gostore/internal/services/state-updater"
+
+	pdfHandler "github.com/benitez96/gostore/cmd/api/handlers/pdf"
+	pdfSvc "github.com/benitez96/gostore/internal/services/pdf"
 )
 
 // CORS middleware
@@ -158,6 +161,9 @@ func main() {
 		Queries: sqlc.New(dbConnection),
 	}
 
+	// Inicializar el servicio PDF
+	pdfSvc := pdfSvc.NewService()
+
 	saleHandler := saleHandler.Handler{
 		Service: &saleSvc,
 	}
@@ -194,6 +200,10 @@ func main() {
 		Service: &workerSvc,
 	}
 
+	pdfHandler := pdfHandler.Handler{
+		Service: pdfSvc,
+	}
+
 	router := httprouter.New()
 
 	// client routes
@@ -228,6 +238,9 @@ func main() {
 	// payment routes
 	router.POST("/api/payments", paymentHandler.CreatePayment)
 	router.DELETE("/api/payments/:id", paymentHandler.DeletePayment)
+
+	// pdf routes
+	router.POST("/api/pdf/generate-receipt", pdfHandler.GeneratePaymentReceipt)
 
 	// quota routes
 	router.PUT("/api/quotas/:id", quotaHandler.UpdateQuota)
