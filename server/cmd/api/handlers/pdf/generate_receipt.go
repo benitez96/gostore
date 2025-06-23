@@ -3,10 +3,10 @@ package pdf
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 
 	"github.com/benitez96/gostore/cmd/core/responses"
-	"github.com/benitez96/gostore/internal/domain"
 	"github.com/julienschmidt/httprouter"
 )
 
@@ -25,6 +25,9 @@ func (h *Handler) GeneratePaymentReceipt(
 		return
 	}
 
+	// Debug: imprimir el tipo y valor del PaymentID
+	log.Printf("PaymentID type: %T, value: %v", req.PaymentID, req.PaymentID)
+
 	// Convertir PaymentID a string
 	var paymentIDStr string
 	switch v := req.PaymentID.(type) {
@@ -34,49 +37,25 @@ func (h *Handler) GeneratePaymentReceipt(
 		paymentIDStr = fmt.Sprintf("%.0f", v)
 	case int:
 		paymentIDStr = fmt.Sprintf("%d", v)
+	case int64:
+		paymentIDStr = fmt.Sprintf("%d", v)
 	default:
+		log.Printf("Unsupported PaymentID type: %T", req.PaymentID)
 		http.Error(w, "Payment ID must be a string or number", http.StatusBadRequest)
 		return
 	}
+
+	log.Printf("Converted PaymentID to string: %s", paymentIDStr)
 
 	if paymentIDStr == "" {
 		http.Error(w, "Payment ID is required", http.StatusBadRequest)
 		return
 	}
 
-	// TODO: Obtener los datos del payment, client, quota y sale desde la base de datos
-	// Por ahora, creamos datos de prueba para hacer funcionar el endpoint
-
-	// Datos de prueba
-	payment := &domain.Payment{
-		ID:      1,
-		Amount:  50000.0,
-		Date:    nil, // Se establecerá en el servicio
-		QuotaID: 1,
-	}
-
-	client := &domain.Client{
-		ID:       1,
-		Name:     "Juan",
-		Lastname: "Pérez",
-		Dni:      "12345678",
-	}
-
-	quota := &domain.Quota{
-		ID:     1,
-		Number: 1,
-		Amount: 50000.0,
-	}
-
-	sale := &domain.Sale{
-		ID:          1,
-		Description: "Venta de prueba",
-		Amount:      50000.0,
-	}
-
-	// Generar el PDF
-	pdfContent, err := h.Service.GeneratePaymentReceipt(payment, client, quota, sale)
+	// Generar el PDF usando el service
+	pdfContent, err := h.Service.GeneratePaymentReceiptFromID(paymentIDStr)
 	if err != nil {
+		log.Printf("Error generating PDF: %v", err)
 		responses.Err(w, err)
 		return
 	}

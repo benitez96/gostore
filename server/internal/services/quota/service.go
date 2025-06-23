@@ -3,6 +3,7 @@ package quota
 import (
 	"time"
 
+	"github.com/benitez96/gostore/internal/domain"
 	"github.com/benitez96/gostore/internal/ports"
 	stateUpdater "github.com/benitez96/gostore/internal/services/state-updater"
 )
@@ -24,4 +25,9 @@ func (s *Service) Update(quotaID string, amount float64, dueDate time.Time) erro
 
 	// Actualizar estados y propagar cambios
 	return s.StateUpdater.UpdateQuotaStateAndPropagate(quotaID)
+}
+
+// GetByID obtiene una quota por su ID
+func (s *Service) GetByID(quotaID string) (*domain.Quota, error) {
+	return s.Repo.GetByID(quotaID)
 }

@@ -99,8 +99,10 @@ function SaleDetails({ saleId }: { saleId: string }) {
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
   const [isDeletePaymentModalOpen, setIsDeletePaymentModalOpen] = useState(false);
   const [isEditQuotaModalOpen, setIsEditQuotaModalOpen] = useState(false);
+  const [isDeleteSaleModalOpen, setIsDeleteSaleModalOpen] = useState(false);
   const [selectedQuota, setSelectedQuota] = useState<any>(null);
   const [selectedPayment, setSelectedPayment] = useState<any>(null);
+  const [selectedSale, setSelectedSale] = useState<any>(null);
 
   const { data: saleDetails, isLoading, error } = useQuery({
     queryKey: ["sale-details", saleId],
@@ -109,6 +111,32 @@ function SaleDetails({ saleId }: { saleId: string }) {
       return response.data;
     },
     enabled: !!saleId,
+  });
+
+  // Mutación para eliminar venta
+  const deleteSaleMutation = useMutation({
+    mutationFn: async (saleId: string) => {
+      await api.delete(`/api/sales/${saleId}`);
+    },
+    onSuccess: () => {
+      addToast({
+        title: "Venta eliminada",
+        description: "La venta se ha eliminado correctamente.",
+        color: "success",
+      });
+      // Invalidar queries para actualizar los datos
+      queryClient.invalidateQueries({ queryKey: ["client"] });
+      setIsDeleteSaleModalOpen(false);
+      setSelectedSale(null);
+    },
+    onError: (error) => {
+      addToast({
+        title: "Error al eliminar venta",
+        description: "No se pudo eliminar la venta. Inténtalo de nuevo.",
+        color: "danger",
+      });
+      console.error("Error deleting sale:", error);
+    },
   });
 
   const formatCurrency = (amount: number) => {
@@ -190,6 +218,17 @@ function SaleDetails({ saleId }: { saleId: string }) {
     }
   };
 
+  const handleDeleteSale = (sale: any) => {
+    setSelectedSale(sale);
+    setIsDeleteSaleModalOpen(true);
+  };
+
+  const confirmDeleteSale = () => {
+    if (selectedSale) {
+      deleteSaleMutation.mutate(selectedSale.id.toString());
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="flex justify-center items-center py-8">
@@ -217,6 +256,30 @@ function SaleDetails({ saleId }: { saleId: string }) {
 
   return (
     <div className="space-y-4">
+      {/* Header con información de la venta y botón eliminar */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <LiaFileInvoiceDollarSolid className="text-2xl text-primary" />
+          <div>
+            <h3 className="font-medium">Venta #{saleDetails?.id}</h3>
+            <p className="text-sm text-default-500">
+              {saleDetails?.description || "Sin descripción"}
+            </p>
+          </div>
+        </div>
+        <Tooltip content="Eliminar venta">
+          <Button
+            isIconOnly
+            size="sm"
+            variant="flat"
+            color="danger"
+            onPress={() => handleDeleteSale(saleDetails)}
+          >
+            <LiaTrashAltSolid />
+          </Button>
+        </Tooltip>
+      </div>
+
       {/* Información básica de la venta */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 bg-default-50 rounded-lg">
         <div className="flex items-center gap-2">
@@ -461,6 +524,76 @@ function SaleDetails({ saleId }: { saleId: string }) {
           quota={selectedQuota}
           onSuccess={handleEditQuotaSuccess}
         />
+      )}
+
+      {/* Modal de confirmación para eliminar venta */}
+      {isDeleteSaleModalOpen && selectedSale && (
+        <Modal isOpen={isDeleteSaleModalOpen} onClose={() => setIsDeleteSaleModalOpen(false)} size="md">
+          <ModalContent>
+            <ModalHeader className="flex flex-col gap-1">
+              <div className="flex items-center gap-2">
+                <LiaTrashAltSolid className="text-2xl text-danger" />
+                <span>Eliminar Venta</span>
+              </div>
+            </ModalHeader>
+            <ModalBody>
+              <div className="space-y-4">
+                <div className="p-4 bg-danger-50 rounded-lg">
+                  <h4 className="font-medium mb-2 text-danger">Confirmar Eliminación</h4>
+                  <p className="text-sm text-default-600">
+                    ¿Estás seguro de que quieres eliminar esta venta? Esta acción no se puede deshacer.
+                  </p>
+                </div>
+
+                <div className="p-4 bg-default-50 rounded-lg">
+                  <h4 className="font-medium mb-2">Información de la Venta</h4>
+                  <div className="grid grid-cols-2 gap-4 text-sm">
+                    <div>
+                      <p className="text-default-500">ID de venta:</p>
+                      <p className="font-medium">#{selectedSale?.id}</p>
+                    </div>
+                    <div>
+                      <p className="text-default-500">Descripción:</p>
+                      <p className="font-medium">{selectedSale?.description || "Sin descripción"}</p>
+                    </div>
+                    <div>
+                      <p className="text-default-500">Monto total:</p>
+                      <p className="font-medium text-danger">{formatCurrency(selectedSale?.amount || 0)}</p>
+                    </div>
+                    <div>
+                      <p className="text-default-500">Fecha:</p>
+                      <p className="font-medium">
+                        {selectedSale?.date ? formatDate(selectedSale.date) : "Sin fecha"}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="p-4 bg-warning-50 rounded-lg">
+                  <h4 className="font-medium mb-2 text-warning">Impacto de la Eliminación</h4>
+                  <div className="space-y-2 text-sm">
+                    <p>• Se eliminarán todas las cuotas asociadas a esta venta</p>
+                    <p>• Se eliminarán todos los pagos registrados para estas cuotas</p>
+                    <p>• Se eliminarán todos los productos asociados a esta venta</p>
+                    <p>• Se recalculará el estado del cliente</p>
+                  </div>
+                </div>
+              </div>
+            </ModalBody>
+            <ModalFooter>
+              <Button variant="light" onPress={() => setIsDeleteSaleModalOpen(false)}>
+                Cancelar
+              </Button>
+              <Button
+                color="danger"
+                onPress={confirmDeleteSale}
+                isLoading={deleteSaleMutation.isPending}
+              >
+                Eliminar Venta
+              </Button>
+            </ModalFooter>
+          </ModalContent>
+        </Modal>
       )}
     </div>
   );
@@ -1000,6 +1133,8 @@ export default function ClienteDetallePage() {
   const [isSaleFormOpen, setIsSaleFormOpen] = useState(false);
   const [isEditFormOpen, setIsEditFormOpen] = useState(false);
   const [isConfirmDeleteOpen, setIsConfirmDeleteOpen] = useState(false);
+  const [isDeleteSaleModalOpen, setIsDeleteSaleModalOpen] = useState(false);
+  const [selectedSale, setSelectedSale] = useState<any>(null);
 
   // Query para obtener el detalle del cliente
   const { data: client, isLoading, error, refetch } = useQuery<ClientDetail>({
@@ -1062,12 +1197,49 @@ export default function ClienteDetallePage() {
     },
   });
 
+  // Mutación para eliminar venta desde el componente principal
+  const deleteSaleMutation = useMutation({
+    mutationFn: async (saleId: string) => {
+      await api.delete(`/api/sales/${saleId}`);
+    },
+    onSuccess: () => {
+      addToast({
+        title: "Venta eliminada",
+        description: "La venta se ha eliminado correctamente.",
+        color: "success",
+      });
+      // Invalidar queries para actualizar los datos
+      queryClient.invalidateQueries({ queryKey: ["client"] });
+      setIsDeleteSaleModalOpen(false);
+      setSelectedSale(null);
+    },
+    onError: (error) => {
+      addToast({
+        title: "Error al eliminar venta",
+        description: "No se pudo eliminar la venta. Inténtalo de nuevo.",
+        color: "danger",
+      });
+      console.error("Error deleting sale:", error);
+    },
+  });
+
   const handleEdit = () => {
     setIsEditFormOpen(true);
   };
 
   const handleDelete = () => {
     setIsConfirmDeleteOpen(true);
+  };
+
+  const handleDeleteSale = (sale: any) => {
+    setSelectedSale(sale);
+    setIsDeleteSaleModalOpen(true);
+  };
+
+  const confirmDeleteSale = () => {
+    if (selectedSale) {
+      deleteSaleMutation.mutate(selectedSale.id.toString());
+    }
   };
 
   const handleFormSubmit = async (clientData: Omit<ClientDetail, 'id'>) => {
@@ -1302,6 +1474,20 @@ export default function ClienteDetallePage() {
                               </Chip>
                             );
                           })()}
+                          <Tooltip content="Eliminar venta">
+                            <Button
+                              isIconOnly
+                              size="sm"
+                              variant="light"
+                              color="danger"
+                              onPress={(e) => {
+                                e.preventDefault();
+                                handleDeleteSale(sale);
+                              }}
+                            >
+                              <LiaTrashAltSolid />
+                            </Button>
+                          </Tooltip>
                         </div>
                       </div>
                     }
@@ -1349,6 +1535,76 @@ export default function ClienteDetallePage() {
           message={`¿Estás seguro de que quieres eliminar al cliente ${client.name} ${client.lastname}? Esta acción no se puede deshacer y eliminará todas sus ventas asociadas.`}
           isLoading={deleteMutation.isPending}
         />
+      )}
+
+      {/* Modal de confirmación para eliminar venta */}
+      {isDeleteSaleModalOpen && selectedSale && (
+        <Modal isOpen={isDeleteSaleModalOpen} onClose={() => setIsDeleteSaleModalOpen(false)} size="md">
+          <ModalContent>
+            <ModalHeader className="flex flex-col gap-1">
+              <div className="flex items-center gap-2">
+                <LiaTrashAltSolid className="text-2xl text-danger" />
+                <span>Eliminar Venta</span>
+              </div>
+            </ModalHeader>
+            <ModalBody>
+              <div className="space-y-4">
+                <div className="p-4 bg-danger-50 rounded-lg">
+                  <h4 className="font-medium mb-2 text-danger">Confirmar Eliminación</h4>
+                  <p className="text-sm text-default-600">
+                    ¿Estás seguro de que quieres eliminar esta venta? Esta acción no se puede deshacer.
+                  </p>
+                </div>
+
+                <div className="p-4 bg-default-50 rounded-lg">
+                  <h4 className="font-medium mb-2">Información de la Venta</h4>
+                  <div className="grid grid-cols-2 gap-4 text-sm">
+                    <div>
+                      <p className="text-default-500">ID de venta:</p>
+                      <p className="font-medium">#{selectedSale?.id}</p>
+                    </div>
+                    <div>
+                      <p className="text-default-500">Descripción:</p>
+                      <p className="font-medium">{selectedSale?.description || "Sin descripción"}</p>
+                    </div>
+                    <div>
+                      <p className="text-default-500">Monto total:</p>
+                      <p className="font-medium text-danger">{formatCurrency(selectedSale?.amount || 0)}</p>
+                    </div>
+                    <div>
+                      <p className="text-default-500">Fecha:</p>
+                      <p className="font-medium">
+                        {selectedSale?.date ? formatDate(selectedSale.date) : "Sin fecha"}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="p-4 bg-warning-50 rounded-lg">
+                  <h4 className="font-medium mb-2 text-warning">Impacto de la Eliminación</h4>
+                  <div className="space-y-2 text-sm">
+                    <p>• Se eliminarán todas las cuotas asociadas a esta venta</p>
+                    <p>• Se eliminarán todos los pagos registrados para estas cuotas</p>
+                    <p>• Se eliminarán todos los productos asociados a esta venta</p>
+                    <p>• Se recalculará el estado del cliente</p>
+                  </div>
+                </div>
+              </div>
+            </ModalBody>
+            <ModalFooter>
+              <Button variant="light" onPress={() => setIsDeleteSaleModalOpen(false)}>
+                Cancelar
+              </Button>
+              <Button
+                color="danger"
+                onPress={confirmDeleteSale}
+                isLoading={deleteSaleMutation.isPending}
+              >
+                Eliminar Venta
+              </Button>
+            </ModalFooter>
+          </ModalContent>
+        </Modal>
       )}
     </DefaultLayout>
   );

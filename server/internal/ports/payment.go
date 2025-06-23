@@ -14,4 +14,5 @@ type PaymentRepository interface {
 type PaymentService interface {
 	Create(payment *domain.Payment) error
 	Delete(paymentID string) error
+	GetByID(paymentID string) (*domain.Payment, error)
 }

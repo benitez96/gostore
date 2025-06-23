@@ -15,4 +15,5 @@ type QuotaRepository interface {
 
 type QuotaService interface {
 	Update(quotaID string, amount float64, dueDate time.Time) error
+	GetByID(quotaID string) (*domain.Quota, error)
 }

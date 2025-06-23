@@ -161,8 +161,13 @@ func main() {
 		Queries: sqlc.New(dbConnection),
 	}
 
+	clientSvc := clientSvc.Service{
+		Repo:    &clientRepository,
+		SaleSvc: &saleSvc,
+	}
+
 	// Inicializar el servicio PDF
-	pdfSvc := pdfSvc.NewService()
+	pdfSvc := pdfSvc.NewService(&paymentSvc, &quotaSvc, &clientSvc, &saleSvc)
 
 	saleHandler := saleHandler.Handler{
 		Service: &saleSvc,
@@ -176,10 +181,6 @@ func main() {
 		Service: &quotaSvc,
 	}
 
-	clientSvc := clientSvc.Service{
-		Repo:    &clientRepository,
-		SaleSvc: &saleSvc,
-	}
 	clientHandler := clientHandler.Handler{
 		Service: &clientSvc,
 	}

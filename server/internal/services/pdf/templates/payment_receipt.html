@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Recibo de Pago</title>
+    <link rel="stylesheet" href="styles/common.css">
+    <link rel="stylesheet" href="styles/payment_receipt.css">
+</head>
+<body>
+    <div class="recibo-moderno">
+        <div class="recibo-header-row">
+            <div class="recibo-header">
+                <span class="recibo-numero">RECIBO N° {{.ReceiptNumber}}</span>
+            </div>
+            <div class="recibo-fecha-header">
+                <span class="recibo-label">Fecha:</span>
+                <span class="recibo-value">{{.Date.Format "02/01/2006"}}</span>
+            </div>
+        </div>
+        <div class="recibo-campos">
+            <div class="recibo-row">
+                <span class="recibo-label">Recibí de:</span>
+                <span class="recibo-value">{{.ClientName}}</span>
+            </div>
+            <div class="recibo-row">
+                <span class="recibo-label">La cantidad de:</span>
+                <span class="recibo-value monto">${{printf "%.2f" .Amount}}</span>
+            </div>
+            <div class="recibo-row">
+                <span class="recibo-label">En concepto de:</span>
+                <span class="recibo-value">{{.SaleDescription}}</span>
+            </div>
+            <div class="recibo-row">
+                <span class="recibo-label">Por la cuota N°:</span>
+                <span class="recibo-value">{{.QuotaNumber}}</span>
+            </div>
+        </div>
+        <div class="recibo-firma">
+            <div class="firma-linea"></div>
+            <div class="firma-label">Firma y Aclaración</div>
+        </div>
+    </div>
+    <div class="recibo-corte">
+        <span class="linea-punteada"></span>
+    </div>
+    <div class="recibo-moderno duplicado">
+        <div class="recibo-header-row">
+            <div class="recibo-header">
+                <span class="recibo-numero">RECIBO N° {{.ReceiptNumber}}</span>
+            </div>
+            <div class="recibo-fecha-header">
+                <span class="recibo-label">DUPLICADO Fecha:</span>
+                <span class="recibo-value">{{.Date.Format "02/01/2006"}}</span>
+            </div>
+        </div>
+        <div class="recibo-campos">
+            <div class="recibo-row">
+                <span class="recibo-label">Recibí de:</span>
+                <span class="recibo-value">{{.ClientName}}</span>
+            </div>
+            <div class="recibo-row">
+                <span class="recibo-label">La cantidad de:</span>
+                <span class="recibo-value monto">${{printf "%.2f" .Amount}}</span>
+            </div>
+            <div class="recibo-row">
+                <span class="recibo-label">En concepto de:</span>
+                <span class="recibo-value">{{.SaleDescription}}</span>
+            </div>
+            <div class="recibo-row">
+                <span class="recibo-label">Por la cuota N°:</span>
+                <span class="recibo-value">{{.QuotaNumber}}</span>
+            </div>
+        </div>
+        <div class="recibo-firma">
+            <div class="firma-linea"></div>
+            <div class="firma-label">Firma y Aclaración</div>
+        </div>
+    </div>
+</body>
+</html> 

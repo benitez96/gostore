@@ -1,6 +1,7 @@
 package payment
 
 import (
+	"github.com/benitez96/gostore/internal/domain"
 	"github.com/benitez96/gostore/internal/ports"
 	stateUpdater "github.com/benitez96/gostore/internal/services/state-updater"
 )
@@ -15,4 +16,9 @@ type Service struct {
 	SaleRepo     ports.SaleRepository
 	ClientRepo   ports.ClientRepository
 	StateUpdater *stateUpdater.Service
+}
+
+// GetByID obtiene un payment por su ID
+func (s *Service) GetByID(paymentID string) (*domain.Payment, error) {
+	return s.Repo.GetByID(paymentID)
 }
