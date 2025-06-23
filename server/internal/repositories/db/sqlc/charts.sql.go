@@ -21,6 +21,36 @@ func (q *Queries) GetActiveSales(ctx context.Context) (int64, error) {
 	return count, err
 }
 
+const getAvailableYears = `-- name: GetAvailableYears :many
+SELECT DISTINCT strftime('%Y', due_date) as year
+FROM quotas 
+WHERE due_date IS NOT NULL
+ORDER BY year DESC
+`
+
+func (q *Queries) GetAvailableYears(ctx context.Context) ([]interface{}, error) {
+	rows, err := q.db.QueryContext(ctx, getAvailableYears)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []interface{}
+	for rows.Next() {
+		var year interface{}
+		if err := rows.Scan(&year); err != nil {
+			return nil, err
+		}
+		items = append(items, year)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const getClientStatusCount = `-- name: GetClientStatusCount :many
 SELECT 
     s.id as status_id,
@@ -62,6 +92,90 @@ func (q *Queries) GetClientStatusCount(ctx context.Context) ([]GetClientStatusCo
 	return items, nil
 }
 
+const getCollectedFromQuotasDueThisMonth = `-- name: GetCollectedFromQuotasDueThisMonth :one
+SELECT IFNULL(SUM(p.amount), 0)
+FROM payments p
+JOIN quotas q ON p.quota_id = q.id
+WHERE strftime('%Y-%m', q.due_date) = strftime('%Y-%m', 'now')
+`
+
+func (q *Queries) GetCollectedFromQuotasDueThisMonth(ctx context.Context) (interface{}, error) {
+	row := q.db.QueryRowContext(ctx, getCollectedFromQuotasDueThisMonth)
+	var ifnull interface{}
+	err := row.Scan(&ifnull)
+	return ifnull, err
+}
+
+const getCollectedThisMonth = `-- name: GetCollectedThisMonth :one
+SELECT IFNULL(SUM(amount), 0) FROM payments WHERE strftime('%Y-%m', date) = strftime('%Y-%m', 'now')
+`
+
+func (q *Queries) GetCollectedThisMonth(ctx context.Context) (interface{}, error) {
+	row := q.db.QueryRowContext(ctx, getCollectedThisMonth)
+	var ifnull interface{}
+	err := row.Scan(&ifnull)
+	return ifnull, err
+}
+
+const getCountQuotasDueLastMonth = `-- name: GetCountQuotasDueLastMonth :one
+SELECT COUNT(*) FROM quotas WHERE strftime('%Y-%m', due_date) = strftime('%Y-%m', date('now', '-1 month'))
+`
+
+func (q *Queries) GetCountQuotasDueLastMonth(ctx context.Context) (int64, error) {
+	row := q.db.QueryRowContext(ctx, getCountQuotasDueLastMonth)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
+const getCountQuotasDueThisMonth = `-- name: GetCountQuotasDueThisMonth :one
+SELECT COUNT(*) FROM quotas WHERE strftime('%Y-%m', due_date) = strftime('%Y-%m', 'now')
+`
+
+func (q *Queries) GetCountQuotasDueThisMonth(ctx context.Context) (int64, error) {
+	row := q.db.QueryRowContext(ctx, getCountQuotasDueThisMonth)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
+const getPaidQuotasDueLastMonth = `-- name: GetPaidQuotasDueLastMonth :one
+SELECT COUNT(*) FROM quotas WHERE is_paid = 1 AND strftime('%Y-%m', due_date) = strftime('%Y-%m', date('now', '-1 month'))
+`
+
+func (q *Queries) GetPaidQuotasDueLastMonth(ctx context.Context) (int64, error) {
+	row := q.db.QueryRowContext(ctx, getPaidQuotasDueLastMonth)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
+const getPaidQuotasDueThisMonth = `-- name: GetPaidQuotasDueThisMonth :one
+SELECT COUNT(*) FROM quotas WHERE is_paid = 1 AND strftime('%Y-%m', due_date) = strftime('%Y-%m', 'now')
+`
+
+func (q *Queries) GetPaidQuotasDueThisMonth(ctx context.Context) (int64, error) {
+	row := q.db.QueryRowContext(ctx, getPaidQuotasDueThisMonth)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
+const getPendingAmount = `-- name: GetPendingAmount :one
+SELECT IFNULL(
+    (SELECT SUM(amount) FROM sales WHERE is_paid = 0) +
+    (SELECT SUM(amount) FROM quotas WHERE is_paid = 0 AND due_date < date('now')), 
+    0
+) as pending_amount
+`
+
+func (q *Queries) GetPendingAmount(ctx context.Context) (interface{}, error) {
+	row := q.db.QueryRowContext(ctx, getPendingAmount)
+	var pending_amount interface{}
+	err := row.Scan(&pending_amount)
+	return pending_amount, err
+}
+
 const getQuotaMonthlySummary = `-- name: GetQuotaMonthlySummary :many
 SELECT 
     strftime('%Y-%m', due_date) as month,
@@ -70,8 +184,9 @@ SELECT
     SUM(CASE WHEN is_paid = 0 THEN amount ELSE 0 END) as amount_not_paid
 FROM quotas 
 WHERE due_date IS NOT NULL
+    AND strftime('%Y', due_date) = strftime('%Y', ?)
 GROUP BY strftime('%Y-%m', due_date)
-ORDER BY month DESC
+ORDER BY month ASC
 `
 
 type GetQuotaMonthlySummaryRow struct {
@@ -81,8 +196,8 @@ type GetQuotaMonthlySummaryRow struct {
 	AmountNotPaid sql.NullFloat64
 }
 
-func (q *Queries) GetQuotaMonthlySummary(ctx context.Context) ([]GetQuotaMonthlySummaryRow, error) {
-	rows, err := q.db.QueryContext(ctx, getQuotaMonthlySummary)
+func (q *Queries) GetQuotaMonthlySummary(ctx context.Context, strftime interface{}) ([]GetQuotaMonthlySummaryRow, error) {
+	rows, err := q.db.QueryContext(ctx, getQuotaMonthlySummary, strftime)
 	if err != nil {
 		return nil, err
 	}
@@ -107,6 +222,75 @@ func (q *Queries) GetQuotaMonthlySummary(ctx context.Context) ([]GetQuotaMonthly
 		return nil, err
 	}
 	return items, nil
+}
+
+const getQuotaMonthlySummaryAll = `-- name: GetQuotaMonthlySummaryAll :many
+SELECT 
+    strftime('%Y-%m', due_date) as month,
+    SUM(amount) as total_amount,
+    SUM(CASE WHEN is_paid = 1 THEN amount ELSE 0 END) as amount_paid,
+    SUM(CASE WHEN is_paid = 0 THEN amount ELSE 0 END) as amount_not_paid
+FROM quotas 
+WHERE due_date IS NOT NULL
+GROUP BY strftime('%Y-%m', due_date)
+ORDER BY month DESC
+`
+
+type GetQuotaMonthlySummaryAllRow struct {
+	Month         interface{}
+	TotalAmount   sql.NullFloat64
+	AmountPaid    sql.NullFloat64
+	AmountNotPaid sql.NullFloat64
+}
+
+func (q *Queries) GetQuotaMonthlySummaryAll(ctx context.Context) ([]GetQuotaMonthlySummaryAllRow, error) {
+	rows, err := q.db.QueryContext(ctx, getQuotaMonthlySummaryAll)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetQuotaMonthlySummaryAllRow
+	for rows.Next() {
+		var i GetQuotaMonthlySummaryAllRow
+		if err := rows.Scan(
+			&i.Month,
+			&i.TotalAmount,
+			&i.AmountPaid,
+			&i.AmountNotPaid,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getQuotasDueNextMonth = `-- name: GetQuotasDueNextMonth :one
+SELECT IFNULL(SUM(amount), 0) FROM quotas WHERE strftime('%Y-%m', due_date) = strftime('%Y-%m', date('now', '+1 month'))
+`
+
+func (q *Queries) GetQuotasDueNextMonth(ctx context.Context) (interface{}, error) {
+	row := q.db.QueryRowContext(ctx, getQuotasDueNextMonth)
+	var ifnull interface{}
+	err := row.Scan(&ifnull)
+	return ifnull, err
+}
+
+const getQuotasDueThisMonth = `-- name: GetQuotasDueThisMonth :one
+SELECT IFNULL(SUM(amount), 0) FROM quotas WHERE strftime('%Y-%m', due_date) = strftime('%Y-%m', 'now')
+`
+
+func (q *Queries) GetQuotasDueThisMonth(ctx context.Context) (interface{}, error) {
+	row := q.db.QueryRowContext(ctx, getQuotasDueThisMonth)
+	var ifnull interface{}
+	err := row.Scan(&ifnull)
+	return ifnull, err
 }
 
 const getTotalClients = `-- name: GetTotalClients :one

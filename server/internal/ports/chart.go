@@ -1,17 +1,23 @@
 package ports
 
 import (
+	"time"
+
 	"github.com/benitez96/gostore/internal/domain"
 )
 
 type ChartService interface {
-	GetQuotaMonthlySummary() ([]*domain.QuotaMonthlySummary, error)
+	GetQuotaMonthlySummary(year time.Time) ([]*domain.QuotaMonthlySummary, error)
+	GetQuotaMonthlySummaryAll() ([]*domain.QuotaMonthlySummary, error)
+	GetAvailableYears() ([]string, error)
 	GetClientStatusCount() ([]*domain.ClientStatusCount, error)
 	GetDashboardStats() (*domain.DashboardStats, error)
 }
 
 type ChartRepository interface {
-	GetQuotaMonthlySummary() ([]*domain.QuotaMonthlySummary, error)
+	GetQuotaMonthlySummary(year time.Time) ([]*domain.QuotaMonthlySummary, error)
+	GetQuotaMonthlySummaryAll() ([]*domain.QuotaMonthlySummary, error)
+	GetAvailableYears() ([]string, error)
 	GetClientStatusCount() ([]*domain.ClientStatusCount, error)
 	GetDashboardStats() (*domain.DashboardStats, error)
 }

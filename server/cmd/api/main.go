@@ -221,6 +221,7 @@ func main() {
 
 	// chart routes
 	router.GET("/api/charts/quotas/monthly-summary", chartHandler.GetQuotaMonthlySummary)
+	router.GET("/api/charts/quotas/available-years", chartHandler.GetAvailableYears)
 	router.GET("/api/charts/clients/status-count", chartHandler.GetClientStatusCount)
 	router.GET("/api/charts/dashboard-stats", chartHandler.GetDashboardStats)
 

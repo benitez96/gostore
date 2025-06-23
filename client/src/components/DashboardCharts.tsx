@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Sector } from 'recharts';
+import { Select, SelectItem } from "@heroui/select";
 
 interface ClientStatusData {
   status_id: number;
@@ -17,6 +18,9 @@ interface QuotaData {
 interface DashboardChartsProps {
   clientStatusData?: ClientStatusData[];
   quotaData?: QuotaData[];
+  availableYears?: string[];
+  selectedYear?: string;
+  onYearChange?: (year: string) => void;
 }
 
 const COLORS = ['#17c964', '#f5a524', '#f31260'];
@@ -69,7 +73,13 @@ const renderActiveShape = (props: any) => {
   );
 };
 
-export default function DashboardCharts({ clientStatusData, quotaData }: DashboardChartsProps) {
+export default function DashboardCharts({ 
+  clientStatusData, 
+  quotaData, 
+  availableYears = [], 
+  selectedYear, 
+  onYearChange 
+}: DashboardChartsProps) {
   const [activeIndex, setActiveIndex] = useState(0);
 
   // Validar que los datos estén disponibles (no undefined/null)
@@ -99,8 +109,8 @@ export default function DashboardCharts({ clientStatusData, quotaData }: Dashboa
       color: COLORS[index % COLORS.length]
     }));
 
-  // Datos para el gráfico de barras apiladas (ingresos mensuales)
-  const barData = quotaData.slice(0, 6).map(month => ({
+  // Datos para el gráfico de barras apiladas (ingresos mensuales) - mostrar todo el año
+  const barData = quotaData.map(month => ({
     month: new Date(month.month + '-01').toLocaleDateString('es-AR', { month: 'short', year: '2-digit' }),
     pagado: month.amount_paid,
     pendiente: month.amount_not_paid,
@@ -196,9 +206,34 @@ export default function DashboardCharts({ clientStatusData, quotaData }: Dashboa
 
       {/* Gráfico de barras apiladas - Ingresos mensuales */}
       <div className="bg-white dark:bg-gray-800 rounded-lg p-6 shadow-sm border border-gray-200 dark:border-gray-700">
-        <h3 className="text-lg font-semibold mb-4 text-gray-900 dark:text-white">
-          Ingresos Mensuales
-        </h3>
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+            Ingresos Mensuales {selectedYear && `(${selectedYear})`}
+          </h3>
+          {/* Selector de año */}
+          {availableYears.length > 0 && (
+            <div className="flex items-center gap-2">
+              <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                Año:
+              </label>
+              <Select
+                selectedKeys={selectedYear ? [selectedYear] : []}
+                onSelectionChange={(keys) => {
+                  const year = Array.from(keys)[0] as string;
+                  onYearChange?.(year);
+                }}
+                className="w-24"
+                size="sm"
+              >
+                {availableYears.map((year) => (
+                  <SelectItem key={year}>
+                    {year}
+                  </SelectItem>
+                ))}
+              </Select>
+            </div>
+          )}
+        </div>
         {barData.length > 0 ? (
           <ResponsiveContainer width="100%" height={300}>
             <BarChart data={barData}>

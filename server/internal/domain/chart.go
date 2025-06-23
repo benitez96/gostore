@@ -1,11 +1,20 @@
 package domain
 
 type DashboardStats struct {
-	TotalClients  int64   `json:"totalClients"`
-	TotalProducts int64   `json:"totalProducts"`
-	TotalSales    int64   `json:"totalSales"`
-	ActiveSales   int64   `json:"activeSales"`
-	TotalRevenue  float64 `json:"totalRevenue"`
+	TotalClients                    int64   `json:"totalClients"`
+	TotalProducts                   int64   `json:"totalProducts"`
+	TotalSales                      int64   `json:"totalSales"`
+	ActiveSales                     int64   `json:"activeSales"`
+	TotalRevenue                    float64 `json:"totalRevenue"`
+	PendingAmount                   float64 `json:"pendingAmount"`
+	CollectedThisMonth              float64 `json:"collectedThisMonth"`
+	QuotasDueThisMonth              float64 `json:"quotasDueThisMonth"`
+	CollectedFromQuotasDueThisMonth float64 `json:"collectedFromQuotasDueThisMonth"`
+	QuotasDueNextMonth              float64 `json:"quotasDueNextMonth"`
+	PaidQuotasDueThisMonth          int64   `json:"paidQuotasDueThisMonth"`
+	CountQuotasDueThisMonth         int64   `json:"countQuotasDueThisMonth"`
+	PaidQuotasDueLastMonth          int64   `json:"paidQuotasDueLastMonth"`
+	CountQuotasDueLastMonth         int64   `json:"countQuotasDueLastMonth"`
 }
 
 // QuotaMonthlySummary represents the monthly quota summary for charts
