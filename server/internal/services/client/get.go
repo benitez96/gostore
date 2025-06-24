@@ -9,7 +9,7 @@ import (
 	"github.com/benitez96/gostore/internal/domain"
 )
 
-func (s Service) GetAll(search string, limit, offset int) (clients *domain.Paginated[*domain.ClientSummary], err error){
+func (s Service) GetAll(search string, limit, offset int, stateIds []int64) (clients *domain.Paginated[*domain.ClientSummary], err error) {
 
 	var (
 		res   []*domain.ClientSummary
@@ -27,7 +27,7 @@ func (s Service) GetAll(search string, limit, offset int) (clients *domain.Pagin
 	go func() {
 		defer wg.Done()
 		var err error
-		res, err = s.Repo.GetAll(search, limit, offset)
+		res, err = s.Repo.GetAll(search, limit, offset, stateIds)
 		if err != nil {
 			errC = fmt.Errorf("unexpected error getting clients: %w", err)
 		}
@@ -37,7 +37,7 @@ func (s Service) GetAll(search string, limit, offset int) (clients *domain.Pagin
 	go func() {
 		defer wg.Done()
 		var err error
-		count, err = s.Repo.Count(search)
+		count, err = s.Repo.Count(search, stateIds)
 		if err != nil {
 			errC = fmt.Errorf("unexpected error counting clients: %w", err)
 		}

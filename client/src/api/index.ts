@@ -91,6 +91,7 @@ export interface ClientsParams {
   limit?: number;
   offset?: number;
   search?: string;
+  states?: number[];
   signal?: AbortSignal;
 }
 
@@ -103,6 +104,9 @@ export const clientsApi = {
     if (params.offset !== undefined)
       searchParams.append("offset", params.offset.toString());
     if (params.search) searchParams.append("search", params.search);
+    if (params.states && params.states.length > 0) {
+      searchParams.append("states", params.states.join(","));
+    }
 
     const response = await api.get(`/api/clients?${searchParams}`, {
       signal: params.signal,

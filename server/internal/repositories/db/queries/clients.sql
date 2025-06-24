@@ -8,17 +8,19 @@ SELECT
   s.id AS stateId
 FROM clients c
   INNER JOIN states s ON c.state_id = s.id
-WHERE name LIKE ?
+WHERE (name LIKE ?
    OR lastname LIKE ?
-   OR dni LIKE ?
+   OR dni LIKE ?)
+  AND (CASE WHEN ? = '' THEN 1 ELSE c.state_id IN (sqlc.slice('state_ids')) END)
 LIMIT ? OFFSET ?;
 
 -- name: CountClients :one
 SELECT COUNT(id)
-FROM clients
-WHERE name LIKE ?
+FROM clients c
+WHERE (name LIKE ?
    OR lastname LIKE ?
-   OR dni LIKE ?;
+   OR dni LIKE ?)
+  AND (CASE WHEN ? = '' THEN 1 ELSE c.state_id IN (sqlc.slice('state_ids')) END);
 
 -- name: InsertClient :one
 INSERT INTO clients

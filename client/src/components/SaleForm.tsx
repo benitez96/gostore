@@ -34,7 +34,7 @@ import {
   LiaEditSolid,
   LiaEyeSolid,
   LiaEyeSlashSolid,
-  LiaSearchengin,
+  LiaSearchSolid,
 } from "react-icons/lia";
 
 import { api } from "../api";
@@ -566,7 +566,7 @@ export default function SaleForm({
                     }}
                     isLoading={loadingProducts}
                     isDisabled={loadingProducts}
-                    startContent={<LiaSearchengin className="text-default-400" />}
+                    startContent={<LiaSearchSolid className="text-default-400" />}
                     allowsCustomValue={false}
                     classNames={{
                       base: "min-h-12",

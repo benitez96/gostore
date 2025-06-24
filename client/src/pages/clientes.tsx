@@ -6,6 +6,7 @@ import {
   RiEyeLine,
   RiEditLine,
   RiDeleteBinLine,
+  RiArrowDownSLine,
 } from "react-icons/ri";
 import { IoPersonAddOutline } from "react-icons/io5";
 import { LiaUserEditSolid } from "react-icons/lia";
@@ -14,6 +15,12 @@ import { Button } from "@heroui/button";
 import { Spinner } from "@heroui/spinner";
 import { Tooltip } from "@heroui/tooltip";
 import { Chip } from "@heroui/chip";
+import {
+  Dropdown,
+  DropdownTrigger,
+  DropdownMenu,
+  DropdownItem,
+} from "@heroui/dropdown";
 import {
   Table,
   TableHeader,
@@ -44,9 +51,20 @@ const statusTextMap = {
   3: "Deudor",
 } as const;
 
+const statusOptions = [
+  { name: "Al día", uid: "1" },
+  { name: "Advertencia", uid: "2" },
+  { name: "Deudor", uid: "3" },
+];
+
+function capitalize(s: string) {
+  return s ? s.charAt(0).toUpperCase() + s.slice(1).toLowerCase() : "";
+}
+
 export default function ClientesPage() {
   const navigate = useNavigate();
   const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState<Set<string>>(new Set(["1", "2", "3"])); // Por defecto todos seleccionados
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [editingClient, setEditingClient] = useState<ClientDetail | null>(null);
@@ -72,10 +90,17 @@ export default function ClientesPage() {
         const limit = 10;
         const offset = (page - 1) * limit;
 
+        // Convertir el filtro de estado a array de números
+        let stateIds: number[] = [];
+        if (statusFilter.size > 0 && statusFilter.size < statusOptions.length) {
+          stateIds = Array.from(statusFilter).map(Number);
+        }
+
         const response: ApiClientsResponse = await clientsApi.getAll({
           offset,
           limit,
           search: filterText,
+          states: stateIds.length > 0 ? stateIds : undefined,
           signal,
         });
 
@@ -115,7 +140,7 @@ export default function ClientesPage() {
         }
       }
     },
-    [],
+    [statusFilter],
   );
 
   // Use AsyncList for infinite scroll with HeroUI Table
@@ -132,6 +157,11 @@ export default function ClientesPage() {
 
     return () => clearTimeout(timer);
   }, [search]);
+
+  // Reload list when state filters change
+  useEffect(() => {
+    list.reload();
+  }, [statusFilter]);
 
   const [loaderRef, scrollerRef] = useInfiniteScroll({
     hasMore,
@@ -372,7 +402,7 @@ export default function ClientesPage() {
           {/* Top Content */}
           <div className="flex justify-between">
             <div className="flex flex-col gap-4 mb-6 w-full">
-              <div className="flex justify-between gap-3 items-end">
+              <div className="flex gap-3 items-end">
                 <Input
                   isClearable
                   className="w-full sm:max-w-[44%]"
@@ -381,6 +411,35 @@ export default function ClientesPage() {
                   value={search}
                   onValueChange={setSearch}
                 />
+                <Dropdown>
+                  <DropdownTrigger>
+                    <Button
+                      endContent={<RiArrowDownSLine className="text-small" />}
+                      variant="flat"
+                    >
+                      {statusFilter.size === statusOptions.length 
+                        ? "Estado" 
+                        : `Estado (${statusFilter.size})`
+                      }
+                    </Button>
+                  </DropdownTrigger>
+                  <DropdownMenu
+                    disallowEmptySelection
+                    aria-label="Filtro de estados"
+                    closeOnSelect={false}
+                    selectedKeys={statusFilter}
+                    selectionMode="multiple"
+                    onSelectionChange={(keys) => {
+                      setStatusFilter(new Set(Array.from(keys).map(String)));
+                    }}
+                  >
+                    {statusOptions.map((status) => (
+                      <DropdownItem key={status.uid} className="capitalize">
+                        {status.name}
+                      </DropdownItem>
+                    ))}
+                  </DropdownMenu>
+                </Dropdown>
               </div>
               <div className="flex justify-between items-center">
                 <span className="text-default-400 text-small">

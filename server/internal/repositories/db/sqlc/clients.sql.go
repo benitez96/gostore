@@ -8,24 +8,42 @@ package sqlc
 import (
 	"context"
 	"database/sql"
+	"strings"
 )
 
 const countClients = `-- name: CountClients :one
 SELECT COUNT(id)
-FROM clients
-WHERE name LIKE ?
+FROM clients c
+WHERE (name LIKE ?
    OR lastname LIKE ?
-   OR dni LIKE ?
+   OR dni LIKE ?)
+  AND (CASE WHEN ? = '' THEN 1 ELSE c.state_id IN (/*SLICE:state_ids*/?) END)
 `
 
 type CountClientsParams struct {
 	Name     string
 	Lastname string
 	Dni      string
+	Column4  interface{}
+	StateIds []int64
 }
 
 func (q *Queries) CountClients(ctx context.Context, arg CountClientsParams) (int64, error) {
-	row := q.db.QueryRowContext(ctx, countClients, arg.Name, arg.Lastname, arg.Dni)
+	query := countClients
+	var queryParams []interface{}
+	queryParams = append(queryParams, arg.Name)
+	queryParams = append(queryParams, arg.Lastname)
+	queryParams = append(queryParams, arg.Dni)
+	queryParams = append(queryParams, arg.Column4)
+	if len(arg.StateIds) > 0 {
+		for _, v := range arg.StateIds {
+			queryParams = append(queryParams, v)
+		}
+		query = strings.Replace(query, "/*SLICE:state_ids*/?", strings.Repeat(",?", len(arg.StateIds))[1:], 1)
+	} else {
+		query = strings.Replace(query, "/*SLICE:state_ids*/?", "NULL", 1)
+	}
+	row := q.db.QueryRowContext(ctx, query, queryParams...)
 	var count int64
 	err := row.Scan(&count)
 	return count, err
@@ -104,9 +122,10 @@ SELECT
   s.id AS stateId
 FROM clients c
   INNER JOIN states s ON c.state_id = s.id
-WHERE name LIKE ?
+WHERE (name LIKE ?
    OR lastname LIKE ?
-   OR dni LIKE ?
+   OR dni LIKE ?)
+  AND (CASE WHEN ? = '' THEN 1 ELSE c.state_id IN (/*SLICE:state_ids*/?) END)
 LIMIT ? OFFSET ?
 `
 
@@ -114,6 +133,8 @@ type GetClientsParams struct {
 	Name     string
 	Lastname string
 	Dni      string
+	Column4  interface{}
+	StateIds []int64
 	Limit    int64
 	Offset   int64
 }
@@ -128,13 +149,23 @@ type GetClientsRow struct {
 }
 
 func (q *Queries) GetClients(ctx context.Context, arg GetClientsParams) ([]GetClientsRow, error) {
-	rows, err := q.db.QueryContext(ctx, getClients,
-		arg.Name,
-		arg.Lastname,
-		arg.Dni,
-		arg.Limit,
-		arg.Offset,
-	)
+	query := getClients
+	var queryParams []interface{}
+	queryParams = append(queryParams, arg.Name)
+	queryParams = append(queryParams, arg.Lastname)
+	queryParams = append(queryParams, arg.Dni)
+	queryParams = append(queryParams, arg.Column4)
+	if len(arg.StateIds) > 0 {
+		for _, v := range arg.StateIds {
+			queryParams = append(queryParams, v)
+		}
+		query = strings.Replace(query, "/*SLICE:state_ids*/?", strings.Repeat(",?", len(arg.StateIds))[1:], 1)
+	} else {
+		query = strings.Replace(query, "/*SLICE:state_ids*/?", "NULL", 1)
+	}
+	queryParams = append(queryParams, arg.Limit)
+	queryParams = append(queryParams, arg.Offset)
+	rows, err := q.db.QueryContext(ctx, query, queryParams...)
 	if err != nil {
 		return nil, err
 	}

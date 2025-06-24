@@ -9,16 +9,22 @@ import (
 	"github.com/benitez96/gostore/internal/repositories/utils"
 )
 
-
-
-func (r *Repository) GetAll(search string, limit, offset int) ([]*domain.ClientSummary, error) {
+func (r *Repository) GetAll(search string, limit, offset int, stateIds []int64) ([]*domain.ClientSummary, error) {
 	ctx, cancel := utils.GetContext()
 	defer cancel()
+
+	// Si no se proporcionan estados, usar string vacío para obtener todos
+	filterFlag := ""
+	if len(stateIds) > 0 && len(stateIds) < 3 { // Si no están los 3 estados seleccionados
+		filterFlag = "filter"
+	}
 
 	rows, err := r.Queries.GetClients(ctx, sqlc.GetClientsParams{
 		Name:     startsWith(search),
 		Lastname: startsWith(search),
 		Dni:      startsWith(search),
+		Column4:  filterFlag,
+		StateIds: stateIds,
 		Limit:    int64(limit),
 		Offset:   int64(offset),
 	})
@@ -30,12 +36,12 @@ func (r *Repository) GetAll(search string, limit, offset int) ([]*domain.ClientS
 	clients := make([]*domain.ClientSummary, len(rows))
 	for i, result := range rows {
 		clients[i] = &domain.ClientSummary{
-			ID:			 	result.ID,
+			ID:       result.ID,
 			Name:     result.Name,
 			Lastname: result.Lastname,
 			Dni:      result.Dni,
 			State: &domain.State{
-				ID: result.Stateid,
+				ID:          result.Stateid,
 				Description: result.Statedescription,
 			},
 		}
@@ -49,7 +55,9 @@ func (r *Repository) Get(id string) (*domain.Client, error) {
 	defer cancel()
 
 	clientID, err := utils.ParseToInt64(id)
-	if err != nil {return nil, err}
+	if err != nil {
+		return nil, err
+	}
 
 	res, err := r.Queries.GetClientByID(ctx, clientID)
 
@@ -58,23 +66,23 @@ func (r *Repository) Get(id string) (*domain.Client, error) {
 	}
 
 	client := &domain.Client{
-		ID:        res.ID,
-		Name:      res.Name,
-		Lastname:  res.Lastname,
-		Dni:       res.Dni,
+		ID:       res.ID,
+		Name:     res.Name,
+		Lastname: res.Lastname,
+		Dni:      res.Dni,
 		State: &domain.State{
 			ID:          res.StateID,
 			Description: res.StateDescription,
 		},
-		Email: utils.ParseToEmptyString(res.Email),
-		Phone: utils.ParseToEmptyString(res.Phone),
+		Email:   utils.ParseToEmptyString(res.Email),
+		Phone:   utils.ParseToEmptyString(res.Phone),
 		Address: utils.ParseToEmptyString(res.Address),
 	}
 
 	return client, nil
 }
 
-func startsWith (seach string) string {
+func startsWith(seach string) string {
 	return seach + "%"
 }
 
