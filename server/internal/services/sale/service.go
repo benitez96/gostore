@@ -18,3 +18,18 @@ type Service struct {
 	ClientRepo   ports.ClientRepository
 	StateUpdater *stateUpdater.Service
 }
+
+func NewService(sr ports.SaleRepository, spr ports.SaleProductRepository, qr ports.QuotaRepository, pr ports.PaymentRepository, clientRepo ports.ClientRepository, stateUpdater *stateUpdater.Service) *Service {
+	return &Service{
+		Sr:           sr,
+		Spr:          spr,
+		Qr:           qr,
+		Pr:           pr,
+		ClientRepo:   clientRepo,
+		StateUpdater: stateUpdater,
+	}
+}
+
+func (s *Service) GetPendingSalesOrderedByClient() ([]*ports.PendingSale, error) {
+	return s.Sr.GetPendingSalesOrderedByClient()
+}

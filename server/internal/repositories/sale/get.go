@@ -3,6 +3,7 @@ package repositories
 import (
 	"github.com/benitez96/gostore/internal/domain"
 	// "github.com/benitez96/gostore/internal/repositories/db/sqlc"
+	"github.com/benitez96/gostore/internal/ports"
 	"github.com/benitez96/gostore/internal/repositories/utils"
 )
 
@@ -68,6 +69,31 @@ func (r *Repository) GetByClientID(id string) (sales []*domain.SaleSummary, err 
 			Description: row.Description,
 			IsPaid:      row.IsPaid,
 			StateID:     int(row.StateID),
+		}
+	}
+
+	return result, nil
+}
+
+func (r *Repository) GetPendingSalesOrderedByClient() ([]*ports.PendingSale, error) {
+	ctx, cancel := utils.GetContext()
+	defer cancel()
+
+	rows, err := r.Queries.GetPendingSalesOrderedByClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	result := make([]*ports.PendingSale, len(rows))
+	for i, row := range rows {
+		result[i] = &ports.PendingSale{
+			ID:             row.ID,
+			Description:    row.Description,
+			Amount:         row.Amount,
+			Date:           row.Date.Format("2006-01-02"),
+			ClientID:       row.ClientID,
+			ClientName:     row.ClientName,
+			ClientLastname: row.ClientLastname,
 		}
 	}
 

@@ -244,6 +244,7 @@ func main() {
 	// pdf routes
 	router.POST("/api/pdf/generate-receipt", pdfHandler.GeneratePaymentReceipt)
 	router.GET("/api/pdf/venta/:id", pdfHandler.GenerateSaleSheet)
+	router.GET("/api/pdf/libro-ventas", pdfHandler.GenerateSalesBook)
 
 	// quota routes
 	router.PUT("/api/quotas/:id", quotaHandler.UpdateQuota)

@@ -34,7 +34,7 @@ import { useInfiniteScroll } from "@heroui/use-infinite-scroll";
 import { addToast } from "@heroui/toast";
 import axios from "axios";
 
-import { Client, ClientDetail, clientsApi, ApiClientsResponse } from "@/api";
+import { Client, ClientDetail, clientsApi, ApiClientsResponse, downloadSalesBook } from "@/api";
 import ClientForm from "@/components/ClientForm";
 import ConfirmModal from "@/components/ConfirmModal";
 import DefaultLayout from "@/layouts/default";
@@ -448,15 +448,41 @@ export default function ClientesPage() {
               </div>
             </div>
             <div className="flex justify-end items-end pb-6">
-              <Button
-                className="font-medium w-full sm:w-auto"
-                color="primary"
-                startContent={<IoPersonAddOutline />}
-                variant="flat"
-                onPress={handleOpenCreateForm}
-              >
-                Crear Cliente
-              </Button>
+              <div className="flex gap-2">
+                <Button
+                  className="font-medium"
+                  color="secondary"
+                  startContent={<RiEyeLine />}
+                  variant="flat"
+                  onPress={async () => {
+                    try {
+                      await downloadSalesBook();
+                      addToast({
+                        title: "Libro generado",
+                        description: "El libro de ventas pendientes se descargó correctamente.",
+                        color: "success",
+                      });
+                    } catch (error) {
+                      addToast({
+                        title: "Error al generar libro",
+                        description: "No se pudo descargar el libro de ventas. Inténtalo de nuevo.",
+                        color: "danger",
+                      });
+                    }
+                  }}
+                >
+                  Libro de Ventas
+                </Button>
+                <Button
+                  className="font-medium w-full sm:w-auto"
+                  color="primary"
+                  startContent={<IoPersonAddOutline />}
+                  variant="flat"
+                  onPress={handleOpenCreateForm}
+                >
+                  Crear Cliente
+                </Button>
+              </div>
             </div>
           </div>
 

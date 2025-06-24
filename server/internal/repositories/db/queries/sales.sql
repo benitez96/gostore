@@ -21,3 +21,17 @@ UPDATE sales SET is_paid = ?, state_id = ? WHERE id = ?;
 
 -- name: DeleteSale :exec
 DELETE FROM sales WHERE id = ?;
+
+-- name: GetPendingSalesOrderedByClient :many
+SELECT 
+  s.id,
+  s.description,
+  s.amount,
+  s.date,
+  s.client_id,
+  c.name as client_name,
+  c.lastname as client_lastname
+FROM sales s
+INNER JOIN clients c ON s.client_id = c.id
+WHERE s.is_paid = 0
+ORDER BY c.lastname ASC, c.name ASC, s.id ASC;

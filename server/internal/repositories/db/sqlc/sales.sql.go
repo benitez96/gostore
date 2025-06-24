@@ -44,6 +44,62 @@ func (q *Queries) DeleteSale(ctx context.Context, id int64) error {
 	return err
 }
 
+const getPendingSalesOrderedByClient = `-- name: GetPendingSalesOrderedByClient :many
+SELECT 
+  s.id,
+  s.description,
+  s.amount,
+  s.date,
+  s.client_id,
+  c.name as client_name,
+  c.lastname as client_lastname
+FROM sales s
+INNER JOIN clients c ON s.client_id = c.id
+WHERE s.is_paid = 0
+ORDER BY c.lastname ASC, c.name ASC, s.id ASC
+`
+
+type GetPendingSalesOrderedByClientRow struct {
+	ID             int64
+	Description    string
+	Amount         float64
+	Date           time.Time
+	ClientID       int64
+	ClientName     string
+	ClientLastname string
+}
+
+func (q *Queries) GetPendingSalesOrderedByClient(ctx context.Context) ([]GetPendingSalesOrderedByClientRow, error) {
+	rows, err := q.db.QueryContext(ctx, getPendingSalesOrderedByClient)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetPendingSalesOrderedByClientRow
+	for rows.Next() {
+		var i GetPendingSalesOrderedByClientRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Description,
+			&i.Amount,
+			&i.Date,
+			&i.ClientID,
+			&i.ClientName,
+			&i.ClientLastname,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const getSaleByID = `-- name: GetSaleByID :one
 SELECT id, description, amount, is_paid, state_id, client_id, date, created_at, updated_at FROM sales WHERE id = ?
 `

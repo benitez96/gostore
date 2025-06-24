@@ -113,6 +113,16 @@ func (s *Service) GenerateSaleSheetPDF(saleID int) ([]byte, error) {
 	return s.generator.GenerateSaleSheetPDF(saleID, s.saleService, s.clientService)
 }
 
+// GenerateSalesBookPDF genera un libro de ventas con todas las ventas pendientes
+func (s *Service) GenerateSalesBookPDF() ([]byte, error) {
+	return s.generator.GenerateSalesBookPDF(s.saleService, s.clientService)
+}
+
+// GenerateSalesBookPDFOptimized genera un libro de ventas usando pool de workers
+func (s *Service) GenerateSalesBookPDFOptimized() ([]byte, error) {
+	return s.generator.GenerateSalesBookPDFOptimized(s.saleService, s.clientService)
+}
+
 // TODO: Agregar métodos para otros tipos de reportes
 // - GenerateSalesReport
 // - GenerateClientReport

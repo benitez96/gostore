@@ -183,5 +183,20 @@ export const downloadSaleSheet = async (saleId: number) => {
   link.parentNode?.removeChild(link);
 };
 
+// Descargar libro de ventas pendientes en PDF
+export const downloadSalesBook = async () => {
+  const response = await api.get('/api/pdf/libro-ventas', {
+    responseType: 'blob',
+  });
+  // Crear un enlace para descargar el archivo
+  const url = window.URL.createObjectURL(new Blob([response.data], { type: 'application/pdf' }));
+  const link = document.createElement('a');
+  link.href = url;
+  link.setAttribute('download', 'libro_ventas_pendientes.pdf');
+  document.body.appendChild(link);
+  link.click();
+  link.parentNode?.removeChild(link);
+};
+
 // Export default api instance
 export default api;
