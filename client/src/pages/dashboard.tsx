@@ -7,6 +7,7 @@ import { Accordion, AccordionItem } from "@heroui/accordion";
 import { Divider } from "@heroui/divider";
 import { Progress } from "@heroui/progress";
 import { Button } from "@heroui/button";
+import { addToast } from "@heroui/toast";
 import {
   RiDonutChartLine,
   RiUserLine,
@@ -20,9 +21,11 @@ import {
   RiRefreshLine,
   RiArrowUpLine,
   RiArrowDownLine,
+  RiFileListLine,
+  RiEyeLine,
 } from "react-icons/ri";
 
-import { api } from "../api";
+import { api, downloadSalesBook } from "../api";
 
 import DefaultLayout from "@/layouts/default";
 import DashboardCharts from "@/components/DashboardCharts";
@@ -708,6 +711,102 @@ export default function DashboardPage() {
                     </p>
                   </div>
                 )}
+              </div>
+            </AccordionItem>
+
+            {/* Reportes */}
+            <AccordionItem
+              key="reports"
+              aria-label="Reportes"
+              title={
+                <div className="flex items-center gap-2">
+                  <RiFileListLine className="text-secondary" />
+                  <span>Reportes</span>
+                </div>
+              }
+            >
+              <div className="p-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {/* Libro de Ventas */}
+                  <Card className="border border-default-200 hover:shadow-md transition-shadow">
+                    <CardBody className="p-4">
+                      <div className="flex flex-col gap-3">
+                        <div className="flex items-center gap-2">
+                          <RiEyeLine className="text-secondary text-lg" />
+                          <h4 className="font-medium">Libro de Ventas</h4>
+                        </div>
+                        <p className="text-sm text-default-600">
+                          Genera un PDF con todas las fichas de ventas pendientes ordenadas alfabéticamente por cliente.
+                        </p>
+                        <Button
+                          className="font-medium"
+                          color="secondary"
+                          startContent={<RiEyeLine />}
+                          variant="flat"
+                          onPress={async () => {
+                            try {
+                              await downloadSalesBook();
+                              addToast({
+                                title: "Libro generado",
+                                description: "El libro de ventas pendientes se descargó correctamente.",
+                                color: "success",
+                              });
+                            } catch (error) {
+                              addToast({
+                                title: "Error al generar libro",
+                                description: "No se pudo descargar el libro de ventas. Inténtalo de nuevo.",
+                                color: "danger",
+                              });
+                            }
+                          }}
+                        >
+                          Descargar Libro
+                        </Button>
+                      </div>
+                    </CardBody>
+                  </Card>
+
+                  {/* Placeholder para futuros reportes */}
+                  <Card className="border border-dashed border-default-300">
+                    <CardBody className="p-4">
+                      <div className="flex flex-col gap-3 items-center text-center">
+                        <RiBarChartLine className="text-default-400 text-2xl" />
+                        <h4 className="font-medium text-default-600">Reporte de Ventas</h4>
+                        <p className="text-sm text-default-500">
+                          Próximamente: Análisis detallado de ventas por período.
+                        </p>
+                        <Button
+                          className="font-medium"
+                          color="default"
+                          variant="flat"
+                          isDisabled
+                        >
+                          Próximamente
+                        </Button>
+                      </div>
+                    </CardBody>
+                  </Card>
+
+                  <Card className="border border-dashed border-default-300">
+                    <CardBody className="p-4">
+                      <div className="flex flex-col gap-3 items-center text-center">
+                        <RiPieChartLine className="text-default-400 text-2xl" />
+                        <h4 className="font-medium text-default-600">Reporte Financiero</h4>
+                        <p className="text-sm text-default-500">
+                          Próximamente: Análisis de ingresos y pagos pendientes.
+                        </p>
+                        <Button
+                          className="font-medium"
+                          color="default"
+                          variant="flat"
+                          isDisabled
+                        >
+                          Próximamente
+                        </Button>
+                      </div>
+                    </CardBody>
+                  </Card>
+                </div>
               </div>
             </AccordionItem>
           </Accordion>
