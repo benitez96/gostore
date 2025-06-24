@@ -361,7 +361,7 @@ export default function DashboardPage() {
               <CardBody className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm text-default-600 font-medium">Cuotas con vencimiento próximo mes</p>
+                    <p className="text-sm text-default-600 font-medium">Cuotas con venc. próximo mes</p>
                     <p className="text-3xl font-bold text-info mt-1 text-balance">{formatCurrency(stats?.quotasDueNextMonth || 0)}</p>
                     <div className="flex items-center gap-1 mt-2">
                       <RiCalendarLine className="text-info text-sm" />

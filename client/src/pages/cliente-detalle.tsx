@@ -1317,29 +1317,6 @@ export default function ClienteDetallePage() {
               <p className="text-default-500">Información completa y gestión del cliente</p>
             </div>
           </div>
-          <div className="flex gap-2 items-center">
-            <Tooltip content="Editar cliente">
-              <Button
-                isIconOnly
-                size="sm"
-                variant="flat"
-                onPress={handleEdit}
-              >
-                <RiEditLine />
-              </Button>
-            </Tooltip>
-            <Tooltip content="Eliminar cliente">
-              <Button
-                isIconOnly
-                size="sm"
-                variant="flat"
-                color="danger"
-                onPress={handleDelete}
-              >
-                <RiDeleteBinLine />
-              </Button>
-            </Tooltip>
-          </div>
         </div>
 
         <div className="max-w-7xl w-full px-4">
@@ -1356,6 +1333,29 @@ export default function ClienteDetallePage() {
                 </p>
               </div>
               <div className="flex gap-2 items-center -mt-4">
+                <div className="flex gap-2 items-center">
+                  <Tooltip content="Editar cliente">
+                    <Button
+                      isIconOnly
+                      size="sm"
+                      variant="flat"
+                      onPress={handleEdit}
+                    >
+                      <RiEditLine />
+                    </Button>
+                  </Tooltip>
+                  <Tooltip content="Eliminar cliente">
+                    <Button
+                      isIconOnly
+                      size="sm"
+                      variant="flat"
+                      color="danger"
+                      onPress={handleDelete}
+                    >
+                      <RiDeleteBinLine />
+                    </Button>
+                  </Tooltip>
+                </div>
                 <Chip 
                   className="capitalize" 
                   color={statusColorMap[client.state?.id as keyof typeof statusColorMap] || "default"} 

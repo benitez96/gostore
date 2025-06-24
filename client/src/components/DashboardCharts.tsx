@@ -219,8 +219,8 @@ export default function DashboardCharts({
               <Select
                 selectedKeys={selectedYear ? [selectedYear] : []}
                 onSelectionChange={(keys) => {
-                  const year = Array.from(keys)[0] as string;
-                  onYearChange?.(year);
+                  const year = Array.from(keys)[0] as string ?? availableYears[0];
+                  onYearChange?.(year)
                 }}
                 className="w-24"
                 size="sm"
