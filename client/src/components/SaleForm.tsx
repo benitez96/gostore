@@ -1,28 +1,49 @@
 import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter } from "@heroui/modal";
+import {
+  Modal,
+  ModalContent,
+  ModalHeader,
+  ModalBody,
+  ModalFooter,
+} from "@heroui/modal";
 import { Button } from "@heroui/button";
 import { Input } from "@heroui/input";
+import { NumberInput } from "@heroui/number-input";
 import { Select, SelectItem } from "@heroui/select";
+import { Autocomplete, AutocompleteItem } from "@heroui/autocomplete";
 import { DatePicker } from "@heroui/date-picker";
-import { Table, TableHeader, TableColumn, TableBody, TableRow, TableCell } from "@heroui/table";
+import {
+  Table,
+  TableHeader,
+  TableColumn,
+  TableBody,
+  TableRow,
+  TableCell,
+} from "@heroui/table";
 import { Chip } from "@heroui/chip";
-import { Spinner } from "@heroui/spinner";
 import { Divider } from "@heroui/divider";
+import { Spinner } from "@heroui/spinner";
 import { parseDate, getLocalTimeZone } from "@internationalized/date";
-import { 
+import {
   LiaMoneyBillWaveSolid,
   LiaCalendarAltSolid,
   LiaCreditCardSolid,
   LiaPlusSolid,
   LiaTrashSolid,
-  LiaTimesSolid,
   LiaEditSolid,
   LiaEyeSolid,
   LiaEyeSlashSolid,
+  LiaSearchengin,
 } from "react-icons/lia";
+
 import { api } from "../api";
-import { Product, SaleFormData, SaleFormProduct, CreateSaleDto } from "../types";
+import {
+  Product,
+  SaleFormData,
+  SaleFormProduct,
+  CreateSaleDto,
+} from "../types";
 
 interface SaleFormProps {
   isOpen: boolean;
@@ -31,41 +52,65 @@ interface SaleFormProps {
   clientName: string;
 }
 
-export default function SaleForm({ isOpen, onClose, clientId, clientName }: SaleFormProps) {
+export default function SaleForm({
+  isOpen,
+  onClose,
+  clientId,
+  clientName,
+}: SaleFormProps) {
   const queryClient = useQueryClient();
   const [formData, setFormData] = useState<SaleFormData>({
-    date: new Date().toISOString().split('T')[0],
+    date: new Date().toISOString().split("T")[0],
     quotas: 1,
-    quota_price: 0,
-    products: []
+    quota_price: "",
+    products: [],
   });
 
   const [selectedProductId, setSelectedProductId] = useState<string>("");
   const [productQuantity, setProductQuantity] = useState<number>(1);
+  const [productSearch, setProductSearch] = useState<string>("");
   const [manualProduct, setManualProduct] = useState({
     name: "",
     cost: 0,
     price: 0,
-    quantity: 1
+    quantity: 1,
   });
   const [isManualMode, setIsManualMode] = useState(false);
-  const [isQuotaPriceManuallyEdited, setIsQuotaPriceManuallyEdited] = useState(false);
+  const [isQuotaPriceManuallyEdited, setIsQuotaPriceManuallyEdited] =
+    useState(false);
   const [isCostVisible, setIsCostVisible] = useState(false);
 
-  // Query para obtener productos
-  const { data: products, isLoading: loadingProducts } = useQuery({
-    queryKey: ["products"],
-    queryFn: async (): Promise<Product[]> => {
-      const response = await api.get("/api/products");
+  // Query para obtener TODOS los productos una sola vez
+  const { data: productsResponse, isLoading: loadingProducts } = useQuery({
+    queryKey: ["all-products"],
+    queryFn: async () => {
+      const response = await api.get("/api/products", {
+        params: {
+          offset: 0,
+          limit: 1000, // Obtener todos los productos
+        },
+      });
       return response.data;
     },
     enabled: isOpen,
+    staleTime: 10 * 60 * 1000, // 10 minutos - cache más largo
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
+    retry: false,
   });
+
+  const allProducts = productsResponse?.results || [];
+  
+  // Filtrado en el cliente basado en productSearch
+  const filteredProducts = allProducts.filter((product: Product) =>
+    product.name.toLowerCase().includes(productSearch.toLowerCase())
+  );
 
   // Mutation para crear venta
   const createSaleMutation = useMutation({
     mutationFn: async (saleData: CreateSaleDto) => {
       const response = await api.post("/api/sales", saleData);
+
       return response.data;
     },
     onSuccess: () => {
@@ -76,23 +121,24 @@ export default function SaleForm({ isOpen, onClose, clientId, clientName }: Sale
     onError: (error: any) => {
       console.error("Error creating sale:", error);
       // TODO: Mostrar toast de error
-    }
+    },
   });
 
   const resetForm = () => {
     setFormData({
-      date: new Date().toISOString().split('T')[0],
+      date: new Date().toISOString().split("T")[0],
       quotas: 1,
-      quota_price: 0,
-      products: []
+      quota_price: "",
+      products: [],
     });
     setSelectedProductId("");
     setProductQuantity(1);
+    setProductSearch("");
     setManualProduct({
       name: "",
       cost: 0,
       price: 0,
-      quantity: 1
+      quantity: 1,
     });
     setIsManualMode(false);
     setIsQuotaPriceManuallyEdited(false);
@@ -117,12 +163,12 @@ export default function SaleForm({ isOpen, onClose, clientId, clientName }: Sale
         price: manualProduct.price,
         cost: manualProduct.cost,
         stock: 0, // Productos manuales no tienen stock
-        is_manual: true
+        is_manual: true,
       };
 
       setFormData({
         ...formData,
-        products: [...formData.products, newProduct]
+        products: [...formData.products, newProduct],
       });
 
       // Reset manual product form
@@ -130,27 +176,31 @@ export default function SaleForm({ isOpen, onClose, clientId, clientName }: Sale
         name: "",
         cost: 0,
         price: 0,
-        quantity: 1
+        quantity: 1,
       });
     } else {
       // Agregar producto seleccionado
       if (!selectedProductId || productQuantity <= 0) return;
 
-      const product = products?.find(p => p.id.toString() === selectedProductId);
+      const product = filteredProducts?.find(
+        (p: Product) => p.id.toString() === selectedProductId,
+      );
+
       if (!product) return;
 
       // Verificar si el producto ya está en la lista
       const existingProductIndex = formData.products.findIndex(
-        p => p.product_id === selectedProductId
+        (p) => p.product_id === selectedProductId,
       );
 
       if (existingProductIndex >= 0) {
         // Actualizar cantidad del producto existente
         const updatedProducts = [...formData.products];
+
         updatedProducts[existingProductIndex].quantity += productQuantity;
         setFormData({
           ...formData,
-          products: updatedProducts
+          products: updatedProducts,
         });
       } else {
         // Agregar nuevo producto
@@ -161,17 +211,19 @@ export default function SaleForm({ isOpen, onClose, clientId, clientName }: Sale
           price: product.price,
           cost: product.cost,
           stock: product.stock,
-          is_manual: false
+          is_manual: false,
         };
 
         setFormData({
           ...formData,
-          products: [...formData.products, newProduct]
+          products: [...formData.products, newProduct],
         });
       }
 
+      // Reset form
       setSelectedProductId("");
       setProductQuantity(1);
+      setProductSearch("");
     }
   };
 
@@ -179,7 +231,7 @@ export default function SaleForm({ isOpen, onClose, clientId, clientName }: Sale
     setIsQuotaPriceManuallyEdited(false);
     setFormData({
       ...formData,
-      products: formData.products.filter(p => p.product_id !== productId)
+      products: formData.products.filter((p) => p.product_id !== productId),
     });
   };
 
@@ -189,9 +241,9 @@ export default function SaleForm({ isOpen, onClose, clientId, clientName }: Sale
     setIsQuotaPriceManuallyEdited(false);
     setFormData({
       ...formData,
-      products: formData.products.map(p => 
-        p.product_id === productId ? { ...p, quantity } : p
-      )
+      products: formData.products.map((p) =>
+        p.product_id === productId ? { ...p, quantity } : p,
+      ),
     });
   };
 
@@ -201,9 +253,9 @@ export default function SaleForm({ isOpen, onClose, clientId, clientName }: Sale
     setIsQuotaPriceManuallyEdited(false);
     setFormData({
       ...formData,
-      products: formData.products.map(p => 
-        p.product_id === productId ? { ...p, price } : p
-      )
+      products: formData.products.map((p) =>
+        p.product_id === productId ? { ...p, price } : p,
+      ),
     });
   };
 
@@ -213,9 +265,9 @@ export default function SaleForm({ isOpen, onClose, clientId, clientName }: Sale
     setIsQuotaPriceManuallyEdited(false);
     setFormData({
       ...formData,
-      products: formData.products.map(p => 
-        p.product_id === productId ? { ...p, cost } : p
-      )
+      products: formData.products.map((p) =>
+        p.product_id === productId ? { ...p, cost } : p,
+      ),
     });
   };
 
@@ -225,23 +277,27 @@ export default function SaleForm({ isOpen, onClose, clientId, clientName }: Sale
     setIsQuotaPriceManuallyEdited(false);
     setFormData({
       ...formData,
-      products: formData.products.map(p => 
-        p.product_id === productId ? { ...p, product_name: name } : p
-      )
+      products: formData.products.map((p) =>
+        p.product_id === productId ? { ...p, product_name: name } : p,
+      ),
     });
   };
 
   const calculateTotal = () => {
     return formData.products.reduce((total, product) => {
-      return total + (product.price * product.quantity);
+      return total + product.price * product.quantity;
     }, 0);
   };
 
   useEffect(() => {
     if (!isQuotaPriceManuallyEdited) {
       const total = calculateTotal();
-      const newQuotaPrice = total > 0 && formData.quotas > 0 ? Math.round((total / formData.quotas) * 100) / 100 : 0;
-      setFormData(prev => ({ ...prev, quota_price: newQuotaPrice }));
+      const newQuotaPrice =
+        total > 0 && formData.quotas > 0
+          ? Math.round((total / formData.quotas) * 100) / 100
+          : 0;
+
+      setFormData((prev) => ({ ...prev, quota_price: newQuotaPrice.toString() }));
     }
   }, [formData.products, formData.quotas, isQuotaPriceManuallyEdited]);
 
@@ -256,107 +312,139 @@ export default function SaleForm({ isOpen, onClose, clientId, clientName }: Sale
       return;
     }
 
-    const totalSale = formData.quota_price * formData.quotas;
+    // Convertir quota_price de string a number para la API
+    const quotaPriceNumber = parseFloat(formData.quota_price.replace(",", ".")) || 0;
+    const totalSale = quotaPriceNumber * formData.quotas;
 
     const saleData: CreateSaleDto = {
       amount: totalSale,
       client_id: parseInt(clientId),
       date: `${formData.date}T12:00:00Z`,
       quotas: formData.quotas,
-      quota_price: formData.quota_price,
-      products: formData.products.map(p => ({
+      quota_price: quotaPriceNumber, // Enviar como number a la API
+      products: formData.products.map((p) => ({
         id: p.is_manual ? 0 : parseInt(p.product_id), // 0 para productos manuales
         name: p.product_name,
         cost: p.cost,
         price: p.price,
-        quantity: p.quantity
-      }))
+        quantity: p.quantity,
+      })),
     };
 
     createSaleMutation.mutate(saleData);
   };
 
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('es-AR', {
-      style: 'currency',
-      currency: 'ARS'
+    return new Intl.NumberFormat("es-AR", {
+      style: "currency",
+      currency: "ARS",
     }).format(amount);
   };
 
   const productsTotal = calculateTotal();
-  const totalSale = formData.quota_price * formData.quotas;
+  // Convertir quota_price de string a number para cálculos
+  const quotaPriceNumber = parseFloat(formData.quota_price.replace(",", ".")) || 0;
+  const totalSale = quotaPriceNumber * formData.quotas;
   const interestAmount = totalSale - productsTotal;
-  const interestPercentage = productsTotal > 0 ? (interestAmount / productsTotal) * 100 : 0;
+  const interestPercentage =
+    productsTotal > 0 ? (interestAmount / productsTotal) * 100 : 0;
 
   return (
-    <Modal isOpen={isOpen} onClose={handleClose} size="4xl" scrollBehavior="inside">
+    <Modal
+      isOpen={isOpen}
+      scrollBehavior="inside"
+      size="4xl"
+      onClose={handleClose}
+    >
       <ModalContent>
         <ModalHeader className="flex flex-col gap-1">
           <div className="flex items-center gap-2">
             <LiaMoneyBillWaveSolid className="text-2xl text-primary" />
             <span>Crear Venta</span>
           </div>
-          <p className="text-sm text-default-500">
-            Cliente: {clientName}
-          </p>
+          <p className="text-sm text-default-500">Cliente: {clientName}</p>
         </ModalHeader>
         <ModalBody>
           <div className="space-y-4">
             {/* Información básica */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
-                <label className="text-sm font-medium text-default-700 mb-2 block">
+                <label htmlFor="sale-date" className="text-sm font-medium text-default-700 mb-2 block">
                   Fecha
                 </label>
                 <DatePicker
+                  id="sale-date"
+                  startContent={
+                    <LiaCalendarAltSolid className="text-default-400" />
+                  }
                   value={parseDate(formData.date)}
                   onChange={(date) => {
                     if (date) {
-                      const dateString = date.toDate(getLocalTimeZone()).toISOString().split('T')[0];
-                      setFormData({ 
-                        ...formData, 
-                        date: dateString
+                      const dateString = date
+                        .toDate(getLocalTimeZone())
+                        .toISOString()
+                        .split("T")[0];
+
+                      setFormData({
+                        ...formData,
+                        date: dateString,
                       });
                     }
                   }}
-                  startContent={<LiaCalendarAltSolid className="text-default-400" />}
                 />
               </div>
-              
+
               <div>
-                <label className="text-sm font-medium text-default-700 mb-2 block">
+                <label htmlFor="sale-quotas" className="text-sm font-medium text-default-700 mb-2 block">
                   Número de Cuotas
                 </label>
                 <Input
-                  type="number"
+                  id="sale-quotas"
                   min="1"
-                  value={formData.quotas.toString()}
-                  onChange={(e) => {
+                  type="number"
+                  placeholder="1"
+                  value={formData.quotas > 0 ? formData.quotas.toString() : ""}
+                  onChange={e => {
                     setIsQuotaPriceManuallyEdited(false);
-                    setFormData({ ...formData, quotas: parseInt(e.target.value) || 1 })
+                    setFormData({
+                      ...formData,
+                      quotas: parseInt(e.target.value) || 0,
+                    });
                   }}
                   startContent={<LiaCreditCardSolid className="text-default-400" />}
                 />
               </div>
-              
+
               <div>
-                <label className="text-sm font-medium text-default-700 mb-2 block">
+                <label htmlFor="sale-quota-price" className="text-sm font-medium text-default-700 mb-2 block">
                   Precio por Cuota
                 </label>
                 <Input
-                  type="number"
+                  id="sale-quota-price"
                   min="0"
-                  step="1"
-                  value={formData.quota_price.toString()}
-                  onChange={(e) => {
-                    setIsQuotaPriceManuallyEdited(true);
-                    setFormData({ ...formData, quota_price: parseFloat(e.target.value) || 0 })
-                  }}
+                  step="0.01"
+                  type="number"
+                  isClearable
                   startContent={
                     <div className="pointer-events-none flex items-center">
                       <span className="text-default-400 text-small">$</span>
                     </div>
                   }
+                  value={formData.quota_price}
+                  onChange={e => {
+                    setIsQuotaPriceManuallyEdited(true);
+                    setFormData({
+                      ...formData,
+                      quota_price: e.target.value,
+                    });
+                  }}
+                  onClear={() => {
+                    setFormData({
+                      ...formData,
+                      quota_price: "",
+                    });
+                  }}
+                  placeholder="0.00"
                 />
               </div>
             </div>
@@ -367,17 +455,17 @@ export default function SaleForm({ isOpen, onClose, clientId, clientName }: Sale
                 <h3 className="font-medium">Agregar Productos</h3>
                 <div className="flex gap-2">
                   <Button
+                    color="primary"
                     size="sm"
                     variant={!isManualMode ? "solid" : "bordered"}
-                    color="primary"
                     onPress={() => setIsManualMode(false)}
                   >
                     Seleccionar Producto
                   </Button>
                   <Button
+                    color="secondary"
                     size="sm"
                     variant={isManualMode ? "solid" : "bordered"}
-                    color="secondary"
                     onPress={() => setIsManualMode(true)}
                   >
                     Producto Manual
@@ -393,89 +481,141 @@ export default function SaleForm({ isOpen, onClose, clientId, clientName }: Sale
                     labelPlacement="outside"
                     placeholder="Ej: Lavarropas automatico"
                     value={manualProduct.name}
-                    onChange={(e) => setManualProduct({ ...manualProduct, name: e.target.value })}
+                    onChange={(e) =>
+                      setManualProduct({
+                        ...manualProduct,
+                        name: e.target.value,
+                      })
+                    }
                   />
                   <Input
                     label="Costo"
                     labelPlacement="outside"
-                    placeholder="0.00"
-                    type="number"
                     min="0"
-                    step="0.01"
-                    value={manualProduct.cost.toString()}
-                    onChange={(e) => setManualProduct({ ...manualProduct, cost: parseFloat(e.target.value) || 0 })}
+                    placeholder="0.00"
                     startContent={
                       <div className="pointer-events-none flex items-center">
                         <span className="text-default-400 text-small">$</span>
                       </div>
+                    }
+                    step="0.01"
+                    type="number"
+                    value={manualProduct.cost.toString()}
+                    onChange={(e) =>
+                      setManualProduct({
+                        ...manualProduct,
+                        cost: parseFloat(e.target.value) || 0,
+                      })
                     }
                   />
                   <Input
                     label="Precio"
                     labelPlacement="outside"
-                    placeholder="0.00"
-                    type="number"
                     min="0"
-                    step="0.01"
-                    value={manualProduct.price.toString()}
-                    onChange={(e) => setManualProduct({ ...manualProduct, price: parseFloat(e.target.value) || 0 })}
+                    placeholder="0.00"
                     startContent={
                       <div className="pointer-events-none flex items-center">
                         <span className="text-default-400 text-small">$</span>
                       </div>
                     }
+                    step="0.01"
+                    type="number"
+                    value={manualProduct.price.toString()}
+                    onChange={(e) =>
+                      setManualProduct({
+                        ...manualProduct,
+                        price: parseFloat(e.target.value) || 0,
+                      })
+                    }
                   />
                   <Input
                     label="Cantidad"
                     labelPlacement="outside"
+                    min="1"
                     placeholder="1"
                     type="number"
-                    min="1"
                     value={manualProduct.quantity.toString()}
-                    onChange={(e) => setManualProduct({ ...manualProduct, quantity: parseInt(e.target.value) || 1 })}
+                    onChange={(e) =>
+                      setManualProduct({
+                        ...manualProduct,
+                        quantity: parseInt(e.target.value) || 1,
+                      })
+                    }
                   />
                 </div>
               ) : (
                 // Formulario para seleccionar producto
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-                  <Input
-                    label="Buscar producto"
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                  <Autocomplete
+                    label="Buscar y seleccionar producto"
                     labelPlacement="outside"
-                    placeholder="Escribe el nombre del producto..."
-                    value={selectedProductId}
-                    onChange={(e) => setSelectedProductId(e.target.value)}
+                    placeholder="Escribe para buscar productos..."
+                    selectedKey={selectedProductId}
+                    inputValue={productSearch}
+                    onInputChange={setProductSearch}
+                    onSelectionChange={(key) => {
+                      const selectedKey = key as string;
+                      setSelectedProductId(selectedKey || "");
+                      // Actualizar el input con el nombre del producto seleccionado
+                      if (selectedKey) {
+                        const selectedProduct = allProducts.find((p: Product) => p.id.toString() === selectedKey);
+                        if (selectedProduct) {
+                          setProductSearch(selectedProduct.name);
+                        }
+                      }
+                    }}
+                    isLoading={loadingProducts}
                     isDisabled={loadingProducts}
-                    list="products-list"
-                  />
-                  <datalist id="products-list">
-                    {products && products.map((product) => (
-                      <option key={product.id} value={product.id.toString()}>
-                        {product.name} - Stock: {product.stock}
-                      </option>
-                    ))}
-                  </datalist>
-                  
+                    startContent={<LiaSearchengin className="text-default-400" />}
+                    allowsCustomValue={false}
+                    classNames={{
+                      base: "min-h-12",
+                    }}
+                  >
+                    {filteredProducts.length > 0 ? (
+                      filteredProducts.map((product: Product) => (
+                        <AutocompleteItem
+                          key={product.id.toString()}
+                          textValue={product.name}
+                        >
+                          <div className="flex flex-col gap-1">
+                            <span className="font-medium">{product.name}</span>
+                            <span className="text-xs text-default-500">
+                              Stock: {product.stock} | Precio: {formatCurrency(product.price)}
+                            </span>
+                          </div>
+                        </AutocompleteItem>
+                      ))
+                    ) : (
+                      <AutocompleteItem key="no-results" textValue="">
+                        {productSearch ? "No se encontraron productos" : "Cargando productos..."}
+                      </AutocompleteItem>
+                    )}
+                  </Autocomplete>
+
                   <Input
                     label="Cantidad"
                     labelPlacement="outside"
+                    min="1"
                     placeholder="1"
                     type="number"
-                    min="1"
                     value={productQuantity.toString()}
-                    onChange={(e) => setProductQuantity(parseInt(e.target.value) || 1)}
+                    onChange={(e) =>
+                      setProductQuantity(parseInt(e.target.value) || 1)
+                    }
                   />
                 </div>
               )}
-              
+
               <Button
                 color="primary"
+                isDisabled={
+                  isManualMode
+                    ? !manualProduct.name.trim() || manualProduct.quantity <= 0
+                    : !selectedProductId || productQuantity <= 0
+                }
                 startContent={<LiaPlusSolid />}
                 onPress={addProduct}
-                isDisabled={
-                  isManualMode 
-                    ? (!manualProduct.name.trim() || manualProduct.quantity <= 0)
-                    : (!selectedProductId || productQuantity <= 0)
-                }
               >
                 Agregar Producto
               </Button>
@@ -492,8 +632,17 @@ export default function SaleForm({ isOpen, onClose, clientId, clientName }: Sale
                     <TableColumn>
                       <div className="flex items-center gap-1">
                         <span>Costo</span>
-                        <Button isIconOnly size="sm" variant="light" onPress={() => setIsCostVisible(!isCostVisible)}>
-                          {isCostVisible ? <LiaEyeSlashSolid /> : <LiaEyeSolid />}
+                        <Button
+                          isIconOnly
+                          size="sm"
+                          variant="light"
+                          onPress={() => setIsCostVisible(!isCostVisible)}
+                        >
+                          {isCostVisible ? (
+                            <LiaEyeSlashSolid />
+                          ) : (
+                            <LiaEyeSolid />
+                          )}
                         </Button>
                       </div>
                     </TableColumn>
@@ -506,60 +655,88 @@ export default function SaleForm({ isOpen, onClose, clientId, clientName }: Sale
                       <TableRow key={product.product_id}>
                         <TableCell>
                           <Input
-                            placeholder="Nombre del producto"
-                            value={product.product_name}
-                            onChange={(e) => updateProductName(product.product_id, e.target.value)}
                             className="w-full"
                             endContent={
                               product.is_manual ? (
-                                <Chip size="sm" color="secondary" variant="flat">
+                                <Chip
+                                  color="secondary"
+                                  size="sm"
+                                  variant="flat"
+                                >
                                   Manual
                                 </Chip>
                               ) : null
                             }
+                            placeholder="Nombre del producto"
+                            value={product.product_name}
+                            onChange={(e) =>
+                              updateProductName(
+                                product.product_id,
+                                e.target.value,
+                              )
+                            }
                           />
                         </TableCell>
                         <TableCell>
                           <Input
+                            className="w-20"
+                            max={product.is_manual ? undefined : product.stock}
+                            min="1"
                             placeholder="1"
                             type="number"
-                            min="1"
-                            max={product.is_manual ? undefined : product.stock}
                             value={product.quantity.toString()}
-                            onChange={(e) => updateProductQuantity(product.product_id, parseInt(e.target.value) || 1)}
-                            className="w-20"
+                            onChange={(e) =>
+                              updateProductQuantity(
+                                product.product_id,
+                                parseInt(e.target.value) || 1,
+                              )
+                            }
                           />
                         </TableCell>
                         <TableCell>
                           <Input
+                            className="w-24"
+                            min="0"
                             placeholder="0.00"
+                            startContent={
+                              <div className="pointer-events-none flex items-center">
+                                <span className="text-default-400 text-small">
+                                  $
+                                </span>
+                              </div>
+                            }
+                            step="1"
                             type={isCostVisible ? "number" : "password"}
-                            min="0"
-                            step="1"
                             value={product.cost.toString()}
-                            onChange={(e) => updateProductCost(product.product_id, parseFloat(e.target.value) || 0)}
-                            startContent={
-                              <div className="pointer-events-none flex items-center">
-                                <span className="text-default-400 text-small">$</span>
-                              </div>
+                            onChange={(e) =>
+                              updateProductCost(
+                                product.product_id,
+                                parseFloat(e.target.value) || 0,
+                              )
                             }
-                            className="w-24"
                           />
                         </TableCell>
                         <TableCell>
                           <Input
-                            placeholder="0.00"
-                            type="number"
+                            className="w-24"
                             min="0"
-                            step="1"
-                            value={product.price.toString()}
-                            onChange={(e) => updateProductPrice(product.product_id, parseFloat(e.target.value) || 0)}
+                            placeholder="0.00"
                             startContent={
                               <div className="pointer-events-none flex items-center">
-                                <span className="text-default-400 text-small">$</span>
+                                <span className="text-default-400 text-small">
+                                  $
+                                </span>
                               </div>
                             }
-                            className="w-24"
+                            step="1"
+                            type="number"
+                            value={product.price.toString()}
+                            onChange={(e) =>
+                              updateProductPrice(
+                                product.product_id,
+                                parseFloat(e.target.value) || 0,
+                              )
+                            }
                           />
                         </TableCell>
                         <TableCell>
@@ -570,8 +747,8 @@ export default function SaleForm({ isOpen, onClose, clientId, clientName }: Sale
                         <TableCell>
                           <Button
                             isIconOnly
-                            size="sm"
                             color="danger"
+                            size="sm"
                             variant="light"
                             onPress={() => removeProduct(product.product_id)}
                           >
@@ -582,29 +759,38 @@ export default function SaleForm({ isOpen, onClose, clientId, clientName }: Sale
                     ))}
                   </TableBody>
                 </Table>
-                
+
                 <div className="mt-6 p-4 bg-default-50 rounded-lg space-y-3">
                   <div className="flex justify-between items-center text-default-600">
                     <span>Total Productos:</span>
-                    <span className="font-semibold text-foreground">{formatCurrency(productsTotal)}</span>
+                    <span className="font-semibold text-foreground">
+                      {formatCurrency(productsTotal)}
+                    </span>
                   </div>
                   <div className="flex justify-between items-center text-default-600">
                     <span>No. Cuotas:</span>
-                    <span className="font-semibold text-foreground">{formData.quotas}</span>
+                    <span className="font-semibold text-foreground">
+                      {formData.quotas}
+                    </span>
                   </div>
                   <div className="flex justify-between items-center text-default-600">
                     <span>Monto por Cuota:</span>
-                    <span className="font-semibold text-foreground">{formatCurrency(formData.quota_price)}</span>
+                    <span className="font-semibold text-foreground">
+                      {formatCurrency(quotaPriceNumber)}
+                    </span>
                   </div>
-                   <div className="flex justify-between items-center text-default-600">
+                  <div className="flex justify-between items-center text-default-600">
                     <span>Interés Agregado:</span>
                     <span className="font-semibold text-success">
-                      +{formatCurrency(interestAmount)} ({interestPercentage.toFixed(2)}%)
+                      +{formatCurrency(interestAmount)} (
+                      {interestPercentage.toFixed(2)}%)
                     </span>
                   </div>
                   <Divider />
                   <div className="flex justify-between items-center">
-                    <span className="text-lg font-semibold">Total de la Venta:</span>
+                    <span className="text-lg font-semibold">
+                      Total de la Venta:
+                    </span>
                     <span className="text-2xl font-bold text-primary">
                       {formatCurrency(totalSale)}
                     </span>
@@ -620,9 +806,13 @@ export default function SaleForm({ isOpen, onClose, clientId, clientName }: Sale
           </Button>
           <Button
             color="primary"
-            onPress={handleSubmit}
+            isDisabled={
+              formData.products.length === 0 || 
+              formData.quotas <= 0 || 
+              quotaPriceNumber <= 0
+            }
             isLoading={createSaleMutation.isPending}
-            isDisabled={formData.products.length === 0}
+            onPress={handleSubmit}
           >
             Crear Venta
           </Button>
@@ -630,4 +820,4 @@ export default function SaleForm({ isOpen, onClose, clientId, clientName }: Sale
       </ModalContent>
     </Modal>
   );
-} 
+}

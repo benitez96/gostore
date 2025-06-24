@@ -1,6 +1,6 @@
 import type { NavigateOptions } from "react-router-dom";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { HeroUIProvider } from "@heroui/system";
 import { ToastProvider } from "@heroui/toast";
 import { useHref, useNavigate } from "react-router-dom";

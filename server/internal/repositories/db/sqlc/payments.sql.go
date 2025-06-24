@@ -13,7 +13,7 @@ import (
 const createPayment = `-- name: CreatePayment :one
 INSERT INTO payments (amount, date, quota_id, client_id) 
 VALUES (?, ?, ?, ?) 
-RETURNING id, amount, date, quota_id, client_id, created_at, updated_at, "foreign"
+RETURNING id, amount, date, quota_id, client_id, created_at, updated_at
 `
 
 type CreatePaymentParams struct {
@@ -39,7 +39,6 @@ func (q *Queries) CreatePayment(ctx context.Context, arg CreatePaymentParams) (P
 		&i.ClientID,
 		&i.CreatedAt,
 		&i.UpdatedAt,
-		&i.Foreign,
 	)
 	return i, err
 }
@@ -54,7 +53,7 @@ func (q *Queries) DeletePayment(ctx context.Context, id int64) error {
 }
 
 const getPaymentByID = `-- name: GetPaymentByID :one
-SELECT id, amount, date, quota_id, client_id, created_at, updated_at, "foreign" FROM payments WHERE id = ?
+SELECT id, amount, date, quota_id, client_id, created_at, updated_at FROM payments WHERE id = ?
 `
 
 func (q *Queries) GetPaymentByID(ctx context.Context, id int64) (Payment, error) {
@@ -68,13 +67,12 @@ func (q *Queries) GetPaymentByID(ctx context.Context, id int64) (Payment, error)
 		&i.ClientID,
 		&i.CreatedAt,
 		&i.UpdatedAt,
-		&i.Foreign,
 	)
 	return i, err
 }
 
 const getQuotaPayments = `-- name: GetQuotaPayments :many
-SELECT id, amount, date, quota_id, client_id, created_at, updated_at, "foreign" FROM payments WHERE quota_id = ?
+SELECT id, amount, date, quota_id, client_id, created_at, updated_at FROM payments WHERE quota_id = ?
 `
 
 func (q *Queries) GetQuotaPayments(ctx context.Context, quotaID int64) ([]Payment, error) {
@@ -94,7 +92,6 @@ func (q *Queries) GetQuotaPayments(ctx context.Context, quotaID int64) ([]Paymen
 			&i.ClientID,
 			&i.CreatedAt,
 			&i.UpdatedAt,
-			&i.Foreign,
 		); err != nil {
 			return nil, err
 		}

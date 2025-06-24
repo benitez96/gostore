@@ -1,11 +1,15 @@
-import { useInfiniteQuery } from '@tanstack/react-query';
-import { clientsApi, Client, ClientsResponse, ApiClientsResponse } from '@/api';
+import { useInfiniteQuery } from "@tanstack/react-query";
 
-const fetchClients = async ({ pageParam = 0, queryKey }: any): Promise<ClientsResponse> => {
+import { clientsApi, ClientsResponse, ApiClientsResponse } from "@/api";
+
+const fetchClients = async ({
+  pageParam = 0,
+  queryKey,
+}: any): Promise<ClientsResponse> => {
   const [_, search] = queryKey;
   const limit = 10;
   const offset = pageParam * limit;
-  
+
   const response: ApiClientsResponse = await clientsApi.getAll({
     limit,
     offset,
@@ -20,14 +24,15 @@ const fetchClients = async ({ pageParam = 0, queryKey }: any): Promise<ClientsRe
   };
 };
 
-export const useClients = (search: string = '') => {
+export const useClients = (search: string = "") => {
   return useInfiniteQuery({
-    queryKey: ['clients', search],
+    queryKey: ["clients", search],
     queryFn: fetchClients,
     getNextPageParam: (lastPage, allPages) => {
       if (lastPage.hasMore) {
         return allPages.length;
       }
+
       return undefined;
     },
     initialPageParam: 0,
@@ -35,4 +40,4 @@ export const useClients = (search: string = '') => {
 };
 
 // Re-export types for convenience
-export type { Client, ClientsResponse } from '@/api'; 
+export type { Client, ClientsResponse } from "@/api";

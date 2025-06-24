@@ -75,6 +75,14 @@ export interface Product {
   updated_at: string;
 }
 
+export interface ProductStats {
+  total_products: number;
+  total_value: number;
+  total_cost: number;
+  total_stock: number;
+  out_of_stock_count: number;
+}
+
 // Sale creation types
 export interface CreateSaleDto {
   amount: number;
@@ -96,7 +104,7 @@ export interface CreateSaleProductDto {
 export interface SaleFormData {
   date: string;
   quotas: number;
-  quota_price: number;
+  quota_price: string;
   products: SaleFormProduct[];
 }
 

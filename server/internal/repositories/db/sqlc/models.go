@@ -38,7 +38,6 @@ type Payment struct {
 	ClientID  int64
 	CreatedAt time.Time
 	UpdatedAt time.Time
-	Foreign   interface{}
 }
 
 type Product struct {
@@ -62,7 +61,6 @@ type Quota struct {
 	ClientID  int64
 	CreatedAt time.Time
 	UpdatedAt time.Time
-	Foreign   interface{}
 }
 
 type Sale struct {
@@ -87,7 +85,6 @@ type SaleProduct struct {
 	ClientID  int64
 	CreatedAt time.Time
 	UpdatedAt time.Time
-	Foreign   interface{}
 }
 
 type State struct {

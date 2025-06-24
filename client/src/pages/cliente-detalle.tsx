@@ -3,11 +3,23 @@ import { useParams, Link, useNavigate } from "react-router-dom";
 import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import { Button } from "@heroui/button";
 import { Chip } from "@heroui/chip";
-import { Table, TableHeader, TableColumn, TableBody, TableRow, TableCell } from "@heroui/table";
+import {
+  Table,
+  TableHeader,
+  TableColumn,
+  TableBody,
+  TableRow,
+  TableCell,
+} from "@heroui/table";
 import { Spinner } from "@heroui/spinner";
-import { Divider } from "@heroui/divider";
 import { Accordion, AccordionItem } from "@heroui/accordion";
-import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter } from "@heroui/modal";
+import {
+  Modal,
+  ModalContent,
+  ModalHeader,
+  ModalBody,
+  ModalFooter,
+} from "@heroui/modal";
 import { Input } from "@heroui/input";
 import { DatePicker } from "@heroui/date-picker";
 import { Tooltip } from "@heroui/tooltip";
@@ -20,23 +32,29 @@ import {
   LiaMapMarkerAltSolid,
   LiaCalendarAltSolid,
   LiaReceiptSolid,
-  LiaMoneyBillWaveSolid, LiaFileInvoiceDollarSolid,
+  LiaMoneyBillWaveSolid,
+  LiaFileInvoiceDollarSolid,
   LiaCreditCardSolid,
   LiaPlusSolid,
   LiaTrashAltSolid,
-  LiaUserEditSolid, LiaEyeSolid,
-  LiaEyeSlashSolid
+  LiaUserEditSolid,
+  LiaEyeSolid,
+  LiaEyeSlashSolid,
+  LiaArrowLeftSolid,
 } from "react-icons/lia";
 import { RiEditLine, RiDeleteBinLine, RiShoppingBagLine } from "react-icons/ri";
-import { api, ClientDetail } from "../api";
+
+import { api, ClientDetail, downloadSaleSheet } from "../api";
+
 import DefaultLayout from "@/layouts/default";
 import SaleForm from "@/components/SaleForm";
 import ClientForm from "@/components/ClientForm";
 import ConfirmModal from "@/components/ConfirmModal";
+import { Divider } from "@heroui/divider";
 
 const statusColorMap = {
   1: "success",
-  2: "warning", 
+  2: "warning",
   3: "danger",
 } as const;
 
@@ -47,7 +65,12 @@ const statusTextMap = {
 } as const;
 
 // Función para determinar el estado de una cuota basado en el estado del backend
-const getQuotaStatus = (quota: any): { color: "success" | "primary" | "warning" | "danger" | "default" | "secondary", text: string } => {
+const getQuotaStatus = (
+  quota: any,
+): {
+  color: "success" | "primary" | "warning" | "danger" | "default" | "secondary";
+  text: string;
+} => {
   // Si está pagada, siempre es verde
   if (quota.is_paid) {
     return { color: "success", text: "Pagada" };
@@ -55,7 +78,7 @@ const getQuotaStatus = (quota: any): { color: "success" | "primary" | "warning" 
 
   // Mapear estados del backend:
   // 1: Pendiente (azul)
-  // 2: Advertencia (naranja) 
+  // 2: Advertencia (naranja)
   // 3: Vencida (roja)
   switch (quota.state) {
     case 1:
@@ -70,7 +93,12 @@ const getQuotaStatus = (quota: any): { color: "success" | "primary" | "warning" 
 };
 
 // Función para determinar el estado de una venta basado en el estado del backend
-const getSaleStatus = (sale: any): { color: "success" | "primary" | "warning" | "danger" | "default" | "secondary", text: string } => {
+const getSaleStatus = (
+  sale: any,
+): {
+  color: "success" | "primary" | "warning" | "danger" | "default" | "secondary";
+  text: string;
+} => {
   // Si está pagada, siempre es verde
   if (sale.is_paid) {
     return { color: "success", text: "Pagada" };
@@ -78,7 +106,7 @@ const getSaleStatus = (sale: any): { color: "success" | "primary" | "warning" | 
 
   // Mapear estados del backend:
   // 1: Pendiente (azul)
-  // 2: Advertencia (naranja) 
+  // 2: Advertencia (naranja)
   // 3: Vencida (roja)
   switch (sale.state) {
     case 1:
@@ -97,17 +125,23 @@ function SaleDetails({ saleId }: { saleId: string }) {
   const queryClient = useQueryClient();
   const [isCostVisible, setIsCostVisible] = useState(false);
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
-  const [isDeletePaymentModalOpen, setIsDeletePaymentModalOpen] = useState(false);
+  const [isDeletePaymentModalOpen, setIsDeletePaymentModalOpen] =
+    useState(false);
   const [isEditQuotaModalOpen, setIsEditQuotaModalOpen] = useState(false);
   const [isDeleteSaleModalOpen, setIsDeleteSaleModalOpen] = useState(false);
   const [selectedQuota, setSelectedQuota] = useState<any>(null);
   const [selectedPayment, setSelectedPayment] = useState<any>(null);
   const [selectedSale, setSelectedSale] = useState<any>(null);
 
-  const { data: saleDetails, isLoading, error } = useQuery({
+  const {
+    data: saleDetails,
+    isLoading,
+    error,
+  } = useQuery({
     queryKey: ["sale-details", saleId],
     queryFn: async () => {
       const response = await api.get(`/api/sales/${saleId}`);
+
       return response.data;
     },
     enabled: !!saleId,
@@ -140,15 +174,16 @@ function SaleDetails({ saleId }: { saleId: string }) {
   });
 
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('es-AR', {
-      style: 'currency',
-      currency: 'ARS'
+    return new Intl.NumberFormat("es-AR", {
+      style: "currency",
+      currency: "ARS",
     }).format(amount);
   };
 
   const formatDate = (dateString?: string) => {
     if (!dateString) return "Sin fecha";
-    return new Date(dateString).toLocaleDateString('es-AR');
+
+    return new Date(dateString).toLocaleDateString("es-AR");
   };
 
   const handlePayment = (quota: any) => {
@@ -193,11 +228,14 @@ function SaleDetails({ saleId }: { saleId: string }) {
       const response = await api.post(
         "/api/pdf/generate-receipt",
         { payment_id: paymentId },
-        { responseType: "blob" }
+        { responseType: "blob" },
       );
       // Crear un enlace para descargar el archivo
-      const url = window.URL.createObjectURL(new Blob([response.data], { type: "application/pdf" }));
+      const url = window.URL.createObjectURL(
+        new Blob([response.data], { type: "application/pdf" }),
+      );
       const link = document.createElement("a");
+
       link.href = url;
       link.setAttribute("download", `comprobante_pago_${paymentId}.pdf`);
       document.body.appendChild(link);
@@ -233,7 +271,9 @@ function SaleDetails({ saleId }: { saleId: string }) {
     return (
       <div className="flex justify-center items-center py-8">
         <Spinner size="sm" />
-        <span className="ml-2 text-sm text-default-500">Cargando detalles...</span>
+        <span className="ml-2 text-sm text-default-500">
+          Cargando detalles...
+        </span>
       </div>
     );
   }
@@ -267,17 +307,30 @@ function SaleDetails({ saleId }: { saleId: string }) {
             </p>
           </div>
         </div>
-        <Tooltip content="Eliminar venta">
-          <Button
-            isIconOnly
-            size="sm"
-            variant="flat"
-            color="danger"
-            onPress={() => handleDeleteSale(saleDetails)}
-          >
-            <LiaTrashAltSolid />
-          </Button>
-        </Tooltip>
+        <div className="flex gap-2">
+          <Tooltip content="Descargar ficha de venta">
+            <Button
+              isIconOnly
+              color="primary"
+              size="sm"
+              variant="flat"
+              onPress={() => downloadSaleSheet(saleDetails.id)}
+            >
+              <LiaFileInvoiceDollarSolid />
+            </Button>
+          </Tooltip>
+          <Tooltip content="Eliminar venta">
+            <Button
+              isIconOnly
+              color="danger"
+              size="sm"
+              variant="flat"
+              onPress={() => handleDeleteSale(saleDetails)}
+            >
+              <LiaTrashAltSolid />
+            </Button>
+          </Tooltip>
+        </div>
       </div>
 
       {/* Información básica de la venta */}
@@ -296,7 +349,9 @@ function SaleDetails({ saleId }: { saleId: string }) {
           <div>
             <p className="text-sm text-default-500">Monto total</p>
             <p className="font-medium">
-              {saleDetails.amount ? formatCurrency(saleDetails.amount) : "Sin monto"}
+              {saleDetails.amount
+                ? formatCurrency(saleDetails.amount)
+                : "Sin monto"}
             </p>
           </div>
         </div>
@@ -328,7 +383,9 @@ function SaleDetails({ saleId }: { saleId: string }) {
             <div>
               <p className="text-sm text-default-500">Total en cuotas</p>
               <p className="font-medium">
-                {formatCurrency(saleDetails.quota_price * saleDetails.quotas.length)}
+                {formatCurrency(
+                  saleDetails.quota_price * saleDetails.quotas.length,
+                )}
               </p>
             </div>
           </div>
@@ -337,11 +394,11 @@ function SaleDetails({ saleId }: { saleId: string }) {
 
       {/* Productos de la venta */}
       {saleDetails.products && saleDetails.products.length > 0 && (
-          <div>
-            <h4 className="font-medium mb-3 flex items-center gap-2">
-              <RiShoppingBagLine />
-              Productos
-            </h4>
+        <div>
+          <h4 className="font-medium mb-3 flex items-center gap-2">
+            <RiShoppingBagLine />
+            Productos
+          </h4>
           <Table aria-label="Productos de la venta">
             <TableHeader>
               <TableColumn>Producto</TableColumn>
@@ -349,10 +406,10 @@ function SaleDetails({ saleId }: { saleId: string }) {
               <TableColumn>
                 <div className="flex items-center gap-1">
                   <span>Costo</span>
-                  <Button 
-                    isIconOnly 
-                    size="sm" 
-                    variant="light" 
+                  <Button
+                    isIconOnly
+                    size="sm"
+                    variant="light"
                     onPress={() => setIsCostVisible(!isCostVisible)}
                   >
                     {isCostVisible ? <LiaEyeSlashSolid /> : <LiaEyeSolid />}
@@ -420,12 +477,9 @@ function SaleDetails({ saleId }: { saleId: string }) {
                   <TableCell>
                     {(() => {
                       const status = getQuotaStatus(quota);
+
                       return (
-                        <Chip 
-                          color={status.color}
-                          variant="flat"
-                          size="sm"
-                        >
+                        <Chip color={status.color} size="sm" variant="flat">
                           {status.text}
                         </Chip>
                       );
@@ -435,7 +489,10 @@ function SaleDetails({ saleId }: { saleId: string }) {
                     {quota.payments && quota.payments.length > 0 ? (
                       <div className="space-y-1">
                         {quota.payments.map((payment: any) => (
-                          <div key={payment.id} className="flex items-center gap-2 text-sm">
+                          <div
+                            key={payment.id}
+                            className="flex items-center gap-2 text-sm"
+                          >
                             <LiaReceiptSolid className="text-success" />
                             <span>{formatCurrency(payment.amount)}</span>
                             <span className="text-default-500">
@@ -444,21 +501,29 @@ function SaleDetails({ saleId }: { saleId: string }) {
                             <Tooltip content="Descargar comprobante">
                               <span
                                 className="text-lg text-primary cursor-pointer active:opacity-50"
-                                onClick={() => downloadPaymentReceipt(payment.id)}
+                                onClick={() =>
+                                  downloadPaymentReceipt(payment.id)
+                                }
                               >
                                 <LiaFileInvoiceDollarSolid />
                               </span>
                             </Tooltip>
                             <Tooltip content="Eliminar pago">
                               <span className="text-lg text-danger cursor-pointer active:opacity-50">
-                                <LiaTrashAltSolid onClick={() => handleDeletePayment(payment, quota)} />
+                                <LiaTrashAltSolid
+                                  onClick={() =>
+                                    handleDeletePayment(payment, quota)
+                                  }
+                                />
                               </span>
                             </Tooltip>
                           </div>
                         ))}
                       </div>
                     ) : (
-                      <span className="text-default-500 text-sm">Sin pagos</span>
+                      <span className="text-default-500 text-sm">
+                        Sin pagos
+                      </span>
                     )}
                   </TableCell>
                   <TableCell>
@@ -466,7 +531,9 @@ function SaleDetails({ saleId }: { saleId: string }) {
                       {!quota.is_paid && (
                         <Tooltip content="Realizar pago">
                           <span className="text-lg text-success cursor-pointer active:opacity-50">
-                            <LiaReceiptSolid onClick={() => handlePayment(quota)} />
+                            <LiaReceiptSolid
+                              onClick={() => handlePayment(quota)}
+                            />
                           </span>
                         </Tooltip>
                       )}
@@ -488,12 +555,12 @@ function SaleDetails({ saleId }: { saleId: string }) {
       {isPaymentModalOpen && selectedQuota && (
         <PaymentModal
           isOpen={isPaymentModalOpen}
+          quota={selectedQuota}
+          saleId={saleId}
           onClose={() => {
             setIsPaymentModalOpen(false);
             setSelectedQuota(null);
           }}
-          quota={selectedQuota}
-          saleId={saleId}
           onSuccess={handlePaymentSuccess}
         />
       )}
@@ -502,13 +569,13 @@ function SaleDetails({ saleId }: { saleId: string }) {
       {isDeletePaymentModalOpen && selectedPayment && selectedQuota && (
         <DeletePaymentModal
           isOpen={isDeletePaymentModalOpen}
+          payment={selectedPayment}
+          quota={selectedQuota}
           onClose={() => {
             setIsDeletePaymentModalOpen(false);
             setSelectedPayment(null);
             setSelectedQuota(null);
           }}
-          payment={selectedPayment}
-          quota={selectedQuota}
           onSuccess={handleDeletePaymentSuccess}
         />
       )}
@@ -517,18 +584,22 @@ function SaleDetails({ saleId }: { saleId: string }) {
       {isEditQuotaModalOpen && selectedQuota && (
         <EditQuotaModal
           isOpen={isEditQuotaModalOpen}
+          quota={selectedQuota}
           onClose={() => {
             setIsEditQuotaModalOpen(false);
             setSelectedQuota(null);
           }}
-          quota={selectedQuota}
           onSuccess={handleEditQuotaSuccess}
         />
       )}
 
       {/* Modal de confirmación para eliminar venta */}
       {isDeleteSaleModalOpen && selectedSale && (
-        <Modal isOpen={isDeleteSaleModalOpen} onClose={() => setIsDeleteSaleModalOpen(false)} size="md">
+        <Modal
+          isOpen={isDeleteSaleModalOpen}
+          size="md"
+          onClose={() => setIsDeleteSaleModalOpen(false)}
+        >
           <ModalContent>
             <ModalHeader className="flex flex-col gap-1">
               <div className="flex items-center gap-2">
@@ -539,9 +610,12 @@ function SaleDetails({ saleId }: { saleId: string }) {
             <ModalBody>
               <div className="space-y-4">
                 <div className="p-4 bg-danger-50 rounded-lg">
-                  <h4 className="font-medium mb-2 text-danger">Confirmar Eliminación</h4>
+                  <h4 className="font-medium mb-2 text-danger">
+                    Confirmar Eliminación
+                  </h4>
                   <p className="text-sm text-default-600">
-                    ¿Estás seguro de que quieres eliminar esta venta? Esta acción no se puede deshacer.
+                    ¿Estás seguro de que quieres eliminar esta venta? Esta
+                    acción no se puede deshacer.
                   </p>
                 </div>
 
@@ -554,40 +628,58 @@ function SaleDetails({ saleId }: { saleId: string }) {
                     </div>
                     <div>
                       <p className="text-default-500">Descripción:</p>
-                      <p className="font-medium">{selectedSale?.description || "Sin descripción"}</p>
+                      <p className="font-medium">
+                        {selectedSale?.description || "Sin descripción"}
+                      </p>
                     </div>
                     <div>
                       <p className="text-default-500">Monto total:</p>
-                      <p className="font-medium text-danger">{formatCurrency(selectedSale?.amount || 0)}</p>
+                      <p className="font-medium text-danger">
+                        {formatCurrency(selectedSale?.amount || 0)}
+                      </p>
                     </div>
                     <div>
                       <p className="text-default-500">Fecha:</p>
                       <p className="font-medium">
-                        {selectedSale?.date ? formatDate(selectedSale.date) : "Sin fecha"}
+                        {selectedSale?.date
+                          ? formatDate(selectedSale.date)
+                          : "Sin fecha"}
                       </p>
                     </div>
                   </div>
                 </div>
 
                 <div className="p-4 bg-warning-50 rounded-lg">
-                  <h4 className="font-medium mb-2 text-warning">Impacto de la Eliminación</h4>
+                  <h4 className="font-medium mb-2 text-warning">
+                    Impacto de la Eliminación
+                  </h4>
                   <div className="space-y-2 text-sm">
-                    <p>• Se eliminarán todas las cuotas asociadas a esta venta</p>
-                    <p>• Se eliminarán todos los pagos registrados para estas cuotas</p>
-                    <p>• Se eliminarán todos los productos asociados a esta venta</p>
+                    <p>
+                      • Se eliminarán todas las cuotas asociadas a esta venta
+                    </p>
+                    <p>
+                      • Se eliminarán todos los pagos registrados para estas
+                      cuotas
+                    </p>
+                    <p>
+                      • Se eliminarán todos los productos asociados a esta venta
+                    </p>
                     <p>• Se recalculará el estado del cliente</p>
                   </div>
                 </div>
               </div>
             </ModalBody>
             <ModalFooter>
-              <Button variant="light" onPress={() => setIsDeleteSaleModalOpen(false)}>
+              <Button
+                variant="light"
+                onPress={() => setIsDeleteSaleModalOpen(false)}
+              >
                 Cancelar
               </Button>
               <Button
                 color="danger"
-                onPress={confirmDeleteSale}
                 isLoading={deleteSaleMutation.isPending}
+                onPress={confirmDeleteSale}
               >
                 Eliminar Venta
               </Button>
@@ -600,21 +692,34 @@ function SaleDetails({ saleId }: { saleId: string }) {
 }
 
 // Componente para el modal de pago
-function PaymentModal({ isOpen, onClose, quota, saleId, onSuccess }: { 
-  isOpen: boolean; 
-  onClose: () => void; 
-  quota: any; 
-  saleId: string; 
+function PaymentModal({
+  isOpen,
+  onClose,
+  quota,
+  saleId,
+  onSuccess,
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+  quota: any;
+  saleId: string;
   onSuccess: () => void;
 }) {
   const [amount, setAmount] = useState(quota?.amount || 0);
-  const [date, setDate] = useState(parseDate(new Date().toISOString().split('T')[0]));
+  const [date, setDate] = useState(
+    parseDate(new Date().toISOString().split("T")[0]),
+  );
   const [isLoading, setIsLoading] = useState(false);
 
   // Calcular el monto pendiente real (total de la cuota menos pagos realizados)
   const calculatePendingAmount = () => {
     const totalQuotaAmount = quota?.amount || 0;
-    const totalPaid = quota?.payments?.reduce((sum: number, payment: any) => sum + payment.amount, 0) || 0;
+    const totalPaid =
+      quota?.payments?.reduce(
+        (sum: number, payment: any) => sum + payment.amount,
+        0,
+      ) || 0;
+
     return Math.max(0, totalQuotaAmount - totalPaid);
   };
 
@@ -624,21 +729,22 @@ function PaymentModal({ isOpen, onClose, quota, saleId, onSuccess }: {
   useEffect(() => {
     if (isOpen && quota) {
       const newPendingAmount = calculatePendingAmount();
+
       setAmount(newPendingAmount);
     }
   }, [isOpen, quota]);
 
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('es-AR', {
-      style: 'currency',
-      currency: 'ARS'
+    return new Intl.NumberFormat("es-AR", {
+      style: "currency",
+      currency: "ARS",
     }).format(amount);
   };
 
   const handleAmountChange = (value: string) => {
     const newAmount = parseFloat(value) || 0;
     const maxAmount = calculatePendingAmount();
-    
+
     // No permitir montos mayores al pendiente
     if (newAmount > maxAmount) {
       setAmount(maxAmount);
@@ -651,32 +757,34 @@ function PaymentModal({ isOpen, onClose, quota, saleId, onSuccess }: {
 
   const handleSubmit = async () => {
     if (amount <= 0) return;
-    
+
     const maxAmount = calculatePendingAmount();
+
     if (amount > maxAmount) {
       addToast({
         title: "Monto inválido",
         description: `No puedes pagar más de ${formatCurrency(maxAmount)}`,
         color: "danger",
       });
+
       return;
     }
-    
+
     setIsLoading(true);
     try {
       // Convertir la fecha del DatePicker a string ISO
       const paymentDate = date.toDate(getLocalTimeZone()).toISOString();
-      
+
       await api.post(`/api/payments`, {
         quota_id: parseInt(quota.id.toString()),
         amount: amount,
-        date: paymentDate
+        date: paymentDate,
       });
-      
+
       // Llamar a la función de éxito para actualizar los datos
       onSuccess();
       onClose();
-      
+
       // Mostrar toast de éxito
       addToast({
         title: "Pago realizado",
@@ -684,8 +792,8 @@ function PaymentModal({ isOpen, onClose, quota, saleId, onSuccess }: {
         color: "success",
       });
     } catch (error) {
-      console.error('Error al crear el pago:', error);
-      
+      console.error("Error al crear el pago:", error);
+
       // Mostrar toast de error
       addToast({
         title: "Error al realizar el pago",
@@ -698,7 +806,7 @@ function PaymentModal({ isOpen, onClose, quota, saleId, onSuccess }: {
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} size="md">
+    <Modal isOpen={isOpen} size="md" onClose={onClose}>
       <ModalContent>
         <ModalHeader className="flex flex-col gap-1">
           <div className="flex items-center gap-2">
@@ -717,55 +825,69 @@ function PaymentModal({ isOpen, onClose, quota, saleId, onSuccess }: {
                 </div>
                 <div>
                   <p className="text-default-500">Monto total de la cuota:</p>
-                  <p className="font-medium">{formatCurrency(quota?.amount || 0)}</p>
+                  <p className="font-medium">
+                    {formatCurrency(quota?.amount || 0)}
+                  </p>
                 </div>
                 <div>
                   <p className="text-default-500">Total pagado:</p>
                   <p className="font-medium text-success">
-                    {formatCurrency(quota?.payments?.reduce((sum: number, payment: any) => sum + payment.amount, 0) || 0)}
+                    {formatCurrency(
+                      quota?.payments?.reduce(
+                        (sum: number, payment: any) => sum + payment.amount,
+                        0,
+                      ) || 0,
+                    )}
                   </p>
                 </div>
                 <div>
                   <p className="text-default-500">Monto pendiente:</p>
-                  <p className="font-medium text-warning">{formatCurrency(pendingAmount)}</p>
+                  <p className="font-medium text-warning">
+                    {formatCurrency(pendingAmount)}
+                  </p>
                 </div>
               </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <Input
+                description={`Máximo: ${formatCurrency(pendingAmount)}`}
+                errorMessage={
+                  amount > pendingAmount
+                    ? `No puede exceder ${formatCurrency(pendingAmount)}`
+                    : ""
+                }
+                isInvalid={amount > pendingAmount}
                 label="Monto a pagar"
                 labelPlacement="outside"
-                placeholder="0.00"
-                type="number"
-                min="0"
                 max={pendingAmount}
-                step="0.01"
-                value={amount.toString()}
-                onChange={(e) => handleAmountChange(e.target.value)}
+                min="0"
+                placeholder="0.00"
                 startContent={
                   <div className="pointer-events-none flex items-center">
                     <span className="text-default-400 text-small">$</span>
                   </div>
                 }
-                description={`Máximo: ${formatCurrency(pendingAmount)}`}
-                isInvalid={amount > pendingAmount}
-                errorMessage={amount > pendingAmount ? `No puede exceder ${formatCurrency(pendingAmount)}` : ""}
+                step="0.01"
+                type="number"
+                value={amount.toString()}
+                onChange={(e) => handleAmountChange(e.target.value)}
               />
-              
+
               <DatePicker
                 label="Fecha de pago"
                 labelPlacement="outside"
+                startContent={
+                  <LiaCalendarAltSolid className="text-default-400" />
+                }
                 value={date}
                 onChange={(newDate) => {
                   if (newDate) {
                     setDate(newDate);
                   }
                 }}
-                startContent={<LiaCalendarAltSolid className="text-default-400" />}
               />
             </div>
-
           </div>
         </ModalBody>
         <ModalFooter>
@@ -774,9 +896,9 @@ function PaymentModal({ isOpen, onClose, quota, saleId, onSuccess }: {
           </Button>
           <Button
             color="success"
-            onPress={handleSubmit}
-            isLoading={isLoading}
             isDisabled={amount <= 0 || amount > pendingAmount}
+            isLoading={isLoading}
+            onPress={handleSubmit}
           >
             Realizar Pago
           </Button>
@@ -787,36 +909,43 @@ function PaymentModal({ isOpen, onClose, quota, saleId, onSuccess }: {
 }
 
 // Componente para el modal de confirmación de eliminación de pago
-function DeletePaymentModal({ isOpen, onClose, payment, quota, onSuccess }: { 
-  isOpen: boolean; 
-  onClose: () => void; 
-  payment: any; 
-  quota: any; 
+function DeletePaymentModal({
+  isOpen,
+  onClose,
+  payment,
+  quota,
+  onSuccess,
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+  payment: any;
+  quota: any;
   onSuccess: () => void;
 }) {
   const [isLoading, setIsLoading] = useState(false);
 
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('es-AR', {
-      style: 'currency',
-      currency: 'ARS'
+    return new Intl.NumberFormat("es-AR", {
+      style: "currency",
+      currency: "ARS",
     }).format(amount);
   };
 
   const formatDate = (dateString?: string) => {
     if (!dateString) return "Sin fecha";
-    return new Date(dateString).toLocaleDateString('es-AR');
+
+    return new Date(dateString).toLocaleDateString("es-AR");
   };
 
   const handleDelete = async () => {
     setIsLoading(true);
     try {
       await api.delete(`/api/payments/${payment.id}`);
-      
+
       // Llamar a la función de éxito para actualizar los datos
       onSuccess();
       onClose();
-      
+
       // Mostrar toast de éxito
       addToast({
         title: "Pago eliminado",
@@ -824,8 +953,8 @@ function DeletePaymentModal({ isOpen, onClose, payment, quota, onSuccess }: {
         color: "success",
       });
     } catch (error) {
-      console.error('Error al eliminar el pago:', error);
-      
+      console.error("Error al eliminar el pago:", error);
+
       // Mostrar toast de error
       addToast({
         title: "Error al eliminar el pago",
@@ -838,7 +967,7 @@ function DeletePaymentModal({ isOpen, onClose, payment, quota, onSuccess }: {
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} size="md">
+    <Modal isOpen={isOpen} size="md" onClose={onClose}>
       <ModalContent>
         <ModalHeader className="flex flex-col gap-1">
           <div className="flex items-center gap-2">
@@ -849,9 +978,12 @@ function DeletePaymentModal({ isOpen, onClose, payment, quota, onSuccess }: {
         <ModalBody>
           <div className="space-y-4">
             <div className="p-4 bg-danger-50 rounded-lg">
-              <h4 className="font-medium mb-2 text-danger">Confirmar Eliminación</h4>
+              <h4 className="font-medium mb-2 text-danger">
+                Confirmar Eliminación
+              </h4>
               <p className="text-sm text-default-600">
-                ¿Estás seguro de que quieres eliminar este pago? Esta acción no se puede deshacer.
+                ¿Estás seguro de que quieres eliminar este pago? Esta acción no
+                se puede deshacer.
               </p>
             </div>
 
@@ -864,7 +996,9 @@ function DeletePaymentModal({ isOpen, onClose, payment, quota, onSuccess }: {
                 </div>
                 <div>
                   <p className="text-default-500">Monto del pago:</p>
-                  <p className="font-medium text-danger">{formatCurrency(payment?.amount || 0)}</p>
+                  <p className="font-medium text-danger">
+                    {formatCurrency(payment?.amount || 0)}
+                  </p>
                 </div>
                 <div>
                   <p className="text-default-500">Fecha del pago:</p>
@@ -880,22 +1014,36 @@ function DeletePaymentModal({ isOpen, onClose, payment, quota, onSuccess }: {
             </div>
 
             <div className="p-4 bg-warning-50 rounded-lg">
-              <h4 className="font-medium mb-2 text-warning">Impacto de la Eliminación</h4>
+              <h4 className="font-medium mb-2 text-warning">
+                Impacto de la Eliminación
+              </h4>
               <div className="space-y-2 text-sm">
                 <div className="flex justify-between">
                   <span>Monto total de la cuota:</span>
-                  <span className="font-medium">{formatCurrency(quota?.amount || 0)}</span>
+                  <span className="font-medium">
+                    {formatCurrency(quota?.amount || 0)}
+                  </span>
                 </div>
                 <div className="flex justify-between">
                   <span>Total pagado actualmente:</span>
                   <span className="font-medium text-success">
-                    {formatCurrency(quota?.payments?.reduce((sum: number, p: any) => sum + p.amount, 0) || 0)}
+                    {formatCurrency(
+                      quota?.payments?.reduce(
+                        (sum: number, p: any) => sum + p.amount,
+                        0,
+                      ) || 0,
+                    )}
                   </span>
                 </div>
                 <div className="flex justify-between">
                   <span>Quedará pendiente después de eliminar:</span>
                   <span className="font-medium text-warning">
-                    {formatCurrency((quota?.payments?.reduce((sum: number, p: any) => sum + p.amount, 0) || 0) - (payment?.amount || 0))}
+                    {formatCurrency(
+                      (quota?.payments?.reduce(
+                        (sum: number, p: any) => sum + p.amount,
+                        0,
+                      ) || 0) - (payment?.amount || 0),
+                    )}
                   </span>
                 </div>
               </div>
@@ -906,11 +1054,7 @@ function DeletePaymentModal({ isOpen, onClose, payment, quota, onSuccess }: {
           <Button variant="light" onPress={onClose}>
             Cancelar
           </Button>
-          <Button
-            color="danger"
-            onPress={handleDelete}
-            isLoading={isLoading}
-          >
+          <Button color="danger" isLoading={isLoading} onPress={handleDelete}>
             Eliminar Pago
           </Button>
         </ModalFooter>
@@ -920,15 +1064,22 @@ function DeletePaymentModal({ isOpen, onClose, payment, quota, onSuccess }: {
 }
 
 // Componente para el modal de edición de cuota
-function EditQuotaModal({ isOpen, onClose, quota, onSuccess }: { 
-  isOpen: boolean; 
-  onClose: () => void; 
-  quota: any; 
+function EditQuotaModal({
+  isOpen,
+  onClose,
+  quota,
+  onSuccess,
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+  quota: any;
   onSuccess: () => void;
 }) {
   const [amount, setAmount] = useState(quota?.amount || 0);
   const [dueDate, setDueDate] = useState(
-    quota?.due_date ? parseDate(quota.due_date.split('T')[0]) : parseDate(new Date().toISOString().split('T')[0])
+    quota?.due_date
+      ? parseDate(quota.due_date.split("T")[0])
+      : parseDate(new Date().toISOString().split("T")[0]),
   );
   const [isLoading, setIsLoading] = useState(false);
 
@@ -937,23 +1088,24 @@ function EditQuotaModal({ isOpen, onClose, quota, onSuccess }: {
     if (isOpen && quota) {
       setAmount(quota.amount || 0);
       if (quota.due_date) {
-        setDueDate(parseDate(quota.due_date.split('T')[0]));
+        setDueDate(parseDate(quota.due_date.split("T")[0]));
       } else {
-        setDueDate(parseDate(new Date().toISOString().split('T')[0]));
+        setDueDate(parseDate(new Date().toISOString().split("T")[0]));
       }
     }
   }, [isOpen, quota]);
 
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('es-AR', {
-      style: 'currency',
-      currency: 'ARS'
+    return new Intl.NumberFormat("es-AR", {
+      style: "currency",
+      currency: "ARS",
     }).format(amount);
   };
 
   const formatDate = (dateString?: string) => {
     if (!dateString) return "Sin fecha";
-    return new Date(dateString).toLocaleDateString('es-AR');
+
+    return new Date(dateString).toLocaleDateString("es-AR");
   };
 
   const handleSubmit = async () => {
@@ -963,23 +1115,24 @@ function EditQuotaModal({ isOpen, onClose, quota, onSuccess }: {
         description: "El monto debe ser mayor a 0",
         color: "danger",
       });
+
       return;
     }
-    
+
     setIsLoading(true);
     try {
       // Convertir la fecha del DatePicker a string ISO
       const quotaDueDate = dueDate.toDate(getLocalTimeZone()).toISOString();
-      
+
       await api.put(`/api/quotas/${quota.id}`, {
         amount: amount,
-        due_date: quotaDueDate
+        due_date: quotaDueDate,
       });
-      
+
       // Llamar a la función de éxito para actualizar los datos
       onSuccess();
       onClose();
-      
+
       // Mostrar toast de éxito
       addToast({
         title: "Cuota actualizada",
@@ -987,8 +1140,8 @@ function EditQuotaModal({ isOpen, onClose, quota, onSuccess }: {
         color: "success",
       });
     } catch (error) {
-      console.error('Error al actualizar la cuota:', error);
-      
+      console.error("Error al actualizar la cuota:", error);
+
       // Mostrar toast de error
       addToast({
         title: "Error al actualizar la cuota",
@@ -1001,7 +1154,7 @@ function EditQuotaModal({ isOpen, onClose, quota, onSuccess }: {
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} size="md">
+    <Modal isOpen={isOpen} size="md" onClose={onClose}>
       <ModalContent>
         <ModalHeader className="flex flex-col gap-1">
           <div className="flex items-center gap-2">
@@ -1022,12 +1175,9 @@ function EditQuotaModal({ isOpen, onClose, quota, onSuccess }: {
                   <p className="text-default-500">Estado:</p>
                   {(() => {
                     const status = getQuotaStatus(quota);
+
                     return (
-                      <Chip 
-                        color={status.color}
-                        variant="flat"
-                        size="sm"
-                      >
+                      <Chip color={status.color} size="sm" variant="flat">
                         {status.text}
                       </Chip>
                     );
@@ -1036,11 +1186,18 @@ function EditQuotaModal({ isOpen, onClose, quota, onSuccess }: {
                 <div>
                   <p className="text-default-500">Total pagado:</p>
                   <p className="font-medium text-success">
-                    {formatCurrency(quota?.payments?.reduce((sum: number, payment: any) => sum + payment.amount, 0) || 0)}
+                    {formatCurrency(
+                      quota?.payments?.reduce(
+                        (sum: number, payment: any) => sum + payment.amount,
+                        0,
+                      ) || 0,
+                    )}
                   </p>
                 </div>
                 <div>
-                  <p className="text-default-500">Fecha de vencimiento actual:</p>
+                  <p className="text-default-500">
+                    Fecha de vencimiento actual:
+                  </p>
                   <p className="font-medium">
                     {quota?.due_date ? formatDate(quota.due_date) : "Sin fecha"}
                   </p>
@@ -1050,57 +1207,69 @@ function EditQuotaModal({ isOpen, onClose, quota, onSuccess }: {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <Input
+                description="Monto total de la cuota"
                 label="Monto de la cuota"
                 labelPlacement="outside"
-                placeholder="0.00"
-                type="number"
                 min="0"
-                step="0.01"
-                value={amount.toString()}
-                onChange={(e) => setAmount(parseFloat(e.target.value) || 0)}
+                placeholder="0.00"
                 startContent={
                   <div className="pointer-events-none flex items-center">
                     <span className="text-default-400 text-small">$</span>
                   </div>
                 }
-                description="Monto total de la cuota"
+                step="0.01"
+                type="number"
+                value={amount.toString()}
+                onChange={(e) => setAmount(parseFloat(e.target.value) || 0)}
               />
-              
+
               <DatePicker
                 label="Fecha de vencimiento"
                 labelPlacement="outside"
+                startContent={
+                  <LiaCalendarAltSolid className="text-default-400" />
+                }
                 value={dueDate}
                 onChange={(newDate) => {
                   if (newDate) {
                     setDueDate(newDate);
                   }
                 }}
-                startContent={<LiaCalendarAltSolid className="text-default-400" />}
               />
             </div>
 
             {/* Resumen de cambios */}
             <div className="p-4 bg-primary-50 rounded-lg">
-              <h4 className="font-medium mb-2 text-primary">Resumen de Cambios</h4>
+              <h4 className="font-medium mb-2 text-primary">
+                Resumen de Cambios
+              </h4>
               <div className="space-y-2 text-sm">
                 <div className="flex justify-between">
                   <span>Monto anterior:</span>
-                  <span className="font-medium">{formatCurrency(quota?.amount || 0)}</span>
+                  <span className="font-medium">
+                    {formatCurrency(quota?.amount || 0)}
+                  </span>
                 </div>
                 <div className="flex justify-between">
                   <span>Monto nuevo:</span>
-                  <span className="font-medium text-primary">{formatCurrency(amount)}</span>
+                  <span className="font-medium text-primary">
+                    {formatCurrency(amount)}
+                  </span>
                 </div>
                 <div className="flex justify-between">
                   <span>Diferencia:</span>
-                  <span className={`font-medium ${amount > (quota?.amount || 0) ? 'text-success' : amount < (quota?.amount || 0) ? 'text-danger' : 'text-default'}`}>
-                    {amount > (quota?.amount || 0) ? '+' : ''}{formatCurrency(amount - (quota?.amount || 0))}
+                  <span
+                    className={`font-medium ${amount > (quota?.amount || 0) ? "text-success" : amount < (quota?.amount || 0) ? "text-danger" : "text-default"}`}
+                  >
+                    {amount > (quota?.amount || 0) ? "+" : ""}
+                    {formatCurrency(amount - (quota?.amount || 0))}
                   </span>
                 </div>
                 {quota?.payments && quota.payments.length > 0 && (
                   <div className="mt-3 p-2 bg-warning-50 rounded">
                     <p className="text-warning text-xs">
-                      ⚠️ Esta cuota tiene pagos registrados. Cambiar el monto puede afectar el estado de pago.
+                      ⚠️ Esta cuota tiene pagos registrados. Cambiar el monto
+                      puede afectar el estado de pago.
                     </p>
                   </div>
                 )}
@@ -1114,9 +1283,9 @@ function EditQuotaModal({ isOpen, onClose, quota, onSuccess }: {
           </Button>
           <Button
             color="primary"
-            onPress={handleSubmit}
-            isLoading={isLoading}
             isDisabled={amount <= 0}
+            isLoading={isLoading}
+            onPress={handleSubmit}
           >
             Actualizar Cuota
           </Button>
@@ -1137,18 +1306,25 @@ export default function ClienteDetallePage() {
   const [selectedSale, setSelectedSale] = useState<any>(null);
 
   // Query para obtener el detalle del cliente
-  const { data: client, isLoading, error, refetch } = useQuery<ClientDetail>({
+  const {
+    data: client,
+    isLoading,
+    error,
+    refetch,
+  } = useQuery<ClientDetail>({
     queryKey: ["client", id],
     queryFn: async (): Promise<ClientDetail> => {
       const response = await api.get(`/api/clients/${id}`);
+
       return response.data;
     },
     enabled: !!id,
   });
 
   const editMutation = useMutation({
-    mutationFn: (clientData: Omit<ClientDetail, 'id'>) => {
+    mutationFn: (clientData: Omit<ClientDetail, "id">) => {
       if (!client) throw new Error("Client not found");
+
       return api.put(`/api/clients/${client.id}`, clientData);
     },
     onSuccess: () => {
@@ -1174,6 +1350,7 @@ export default function ClienteDetallePage() {
   const deleteMutation = useMutation({
     mutationFn: () => {
       if (!client) throw new Error("Client not found");
+
       return api.delete(`/api/clients/${client.id}`);
     },
     onSuccess: () => {
@@ -1242,7 +1419,7 @@ export default function ClienteDetallePage() {
     }
   };
 
-  const handleFormSubmit = async (clientData: Omit<ClientDetail, 'id'>) => {
+  const handleFormSubmit = async (clientData: Omit<ClientDetail, "id">) => {
     editMutation.mutate(clientData);
   };
 
@@ -1251,15 +1428,16 @@ export default function ClienteDetallePage() {
   };
 
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('es-AR', {
-      style: 'currency',
-      currency: 'ARS'
+    return new Intl.NumberFormat("es-AR", {
+      style: "currency",
+      currency: "ARS",
     }).format(amount);
   };
 
   const formatDate = (dateString?: string) => {
     if (!dateString) return "Sin fecha";
-    return new Date(dateString).toLocaleDateString('es-AR');
+
+    return new Date(dateString).toLocaleDateString("es-AR");
   };
 
   if (isLoading) {
@@ -1277,7 +1455,15 @@ export default function ClienteDetallePage() {
       <DefaultLayout>
         <div className="flex flex-col items-center justify-center h-64">
           <p className="text-danger">Error al cargar el cliente</p>
-          <Button as={Link} to="/clientes" color="primary" variant="flat">
+          <Button 
+            as={Link} 
+            size="sm" 
+            to="/clientes" 
+            variant="flat"
+            color="primary"
+            startContent={<LiaArrowLeftSolid />}
+            className="font-medium transition-all duration-200 hover:scale-105"
+          >
             Volver a clientes
           </Button>
         </div>
@@ -1290,7 +1476,15 @@ export default function ClienteDetallePage() {
       <DefaultLayout>
         <div className="flex flex-col items-center justify-center h-64">
           <p>Cliente no encontrado</p>
-          <Button as={Link} to="/clientes" color="primary" variant="flat">
+          <Button 
+            as={Link} 
+            size="sm" 
+            to="/clientes" 
+            variant="flat"
+            color="primary"
+            startContent={<LiaArrowLeftSolid />}
+            className="font-medium transition-all duration-200 hover:scale-105"
+          >
             Volver a clientes
           </Button>
         </div>
@@ -1304,9 +1498,18 @@ export default function ClienteDetallePage() {
         {/* Header con título y navegación */}
         <div className="flex items-center justify-between max-w-7xl w-full px-4">
           <div className="flex items-center gap-3">
-            <Button as={Link} to="/clientes" variant="light" size="sm">
-              ← Volver a clientes
+            <Button 
+              as={Link} 
+              size="sm" 
+              to="/clientes" 
+              variant="flat"
+              color="primary"
+              startContent={<LiaArrowLeftSolid />}
+              className="font-medium transition-all duration-200 hover:scale-105"
+            >
+              Volver a clientes
             </Button>
+            <Divider orientation="vertical" />
             <div className="p-3 bg-gradient-to-br from-primary-500 to-primary-600 rounded-xl">
               <LiaUserSolid className="text-white text-2xl" />
             </div>
@@ -1314,7 +1517,9 @@ export default function ClienteDetallePage() {
               <h1 className="text-3xl font-bold bg-gradient-to-r from-primary-600 to-secondary-600 bg-clip-text text-transparent">
                 Detalle del Cliente
               </h1>
-              <p className="text-default-500">Información completa y gestión del cliente</p>
+              <p className="text-default-500">
+                Información completa y gestión del cliente
+              </p>
             </div>
           </div>
         </div>
@@ -1347,26 +1552,32 @@ export default function ClienteDetallePage() {
                   <Tooltip content="Eliminar cliente">
                     <Button
                       isIconOnly
+                      color="danger"
                       size="sm"
                       variant="flat"
-                      color="danger"
                       onPress={handleDelete}
                     >
                       <RiDeleteBinLine />
                     </Button>
                   </Tooltip>
                 </div>
-                <Chip 
-                  className="capitalize" 
-                  color={statusColorMap[client.state?.id as keyof typeof statusColorMap] || "default"} 
-                  size="sm" 
+                <Chip
+                  className="capitalize"
+                  color={
+                    statusColorMap[
+                      client.state?.id as keyof typeof statusColorMap
+                    ] || "default"
+                  }
+                  size="sm"
                   variant="flat"
                 >
-                  {statusTextMap[client.state?.id as keyof typeof statusTextMap] || "Desconocido"}
+                  {statusTextMap[
+                    client.state?.id as keyof typeof statusTextMap
+                  ] || "Desconocido"}
                 </Chip>
               </div>
             </div>
-            
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {/* Primera columna - 3 datos */}
               <div className="flex items-center gap-3">
@@ -1376,7 +1587,7 @@ export default function ClienteDetallePage() {
                   <p className="font-medium">{client.dni}</p>
                 </div>
               </div>
-              
+
               {client.email && (
                 <div className="flex items-center gap-3">
                   <LiaEnvelopeSolid className="text-lg text-default-500" />
@@ -1386,7 +1597,7 @@ export default function ClienteDetallePage() {
                   </div>
                 </div>
               )}
-              
+
               {client.phone && (
                 <div className="flex items-center gap-3">
                   <LiaPhoneSolid className="text-lg text-default-500" />
@@ -1396,7 +1607,7 @@ export default function ClienteDetallePage() {
                   </div>
                 </div>
               )}
-              
+
               {/* Cuarta columna - 1 dato */}
               {client.address && (
                 <div className="flex items-center gap-3">
@@ -1410,41 +1621,40 @@ export default function ClienteDetallePage() {
             </div>
           </div>
 
-
           {/* Lista de ventas */}
           <div className="bg-content1 border border-default-200 rounded-lg p-4">
-          <div className="w-full flex justify-between">
-            <div className="flex gap-3 mb-4">
-              <LiaFileInvoiceDollarSolid className="text-2xl text-primary" />
-              <div className="flex flex-col">
-                <p className="text-md font-semibold">Ventas</p>
-                <p className="text-small text-default-500">
-                  {client.sales?.length || 0} ventas registradas
-                </p>
+            <div className="w-full flex justify-between">
+              <div className="flex gap-3 mb-4">
+                <LiaFileInvoiceDollarSolid className="text-2xl text-primary" />
+                <div className="flex flex-col">
+                  <p className="text-md font-semibold">Ventas</p>
+                  <p className="text-small text-default-500">
+                    {client.sales?.length || 0} ventas registradas
+                  </p>
+                </div>
               </div>
+              {/* Botón Crear Venta - Separado en su propio bloque */}
+
+              <Button
+                className="w-full sm:w-auto"
+                color="primary"
+                size="sm"
+                startContent={<LiaPlusSolid />}
+                onPress={() => setIsSaleFormOpen(true)}
+              >
+                Crear Venta
+              </Button>
             </div>
-                      {/* Botón Crear Venta - Separado en su propio bloque */}
-          
-            <Button 
-              color="primary" 
-              startContent={<LiaPlusSolid />}
-              className="w-full sm:w-auto"
-              size="sm"
-              onPress={() => setIsSaleFormOpen(true)}
-            >
-              Crear Venta
-            </Button>
-          </div>
             {!client.sales || client.sales.length === 0 ? (
               <div className="text-center py-8 text-default-500">
                 <LiaFileInvoiceDollarSolid className="text-4xl mx-auto mb-2" />
                 <p>No hay ventas registradas para este cliente</p>
               </div>
             ) : (
-              <Accordion 
-                variant="splitted" 
-                selectionMode="multiple"
+              <Accordion
                 className="gap-2"
+                selectionMode="multiple"
+                variant="splitted"
               >
                 {client.sales.map((sale: any) => (
                   <AccordionItem
@@ -1464,35 +1674,23 @@ export default function ClienteDetallePage() {
                         <div className="flex items-center gap-2">
                           {(() => {
                             const status = getSaleStatus(sale);
+
                             return (
-                              <Chip 
+                              <Chip
                                 color={status.color}
-                                variant="flat"
                                 size="sm"
+                                variant="flat"
                               >
                                 {status.text}
                               </Chip>
                             );
                           })()}
-                          <Tooltip content="Eliminar venta">
-                            <Button
-                              isIconOnly
-                              size="sm"
-                              variant="light"
-                              color="danger"
-                              onPress={(e) => {
-                                e.preventDefault();
-                                handleDeleteSale(sale);
-                              }}
-                            >
-                              <LiaTrashAltSolid />
-                            </Button>
-                          </Tooltip>
+                          
                         </div>
                       </div>
                     }
                   >
-                    <SaleDetails saleId={sale.id?.toString() || ''} />
+                    <SaleDetails saleId={sale.id?.toString() || ""} />
                   </AccordionItem>
                 ))}
               </Accordion>
@@ -1503,43 +1701,47 @@ export default function ClienteDetallePage() {
 
       {/* Modal de crear venta */}
       <SaleForm
-        isOpen={isSaleFormOpen}
-        onClose={() => setIsSaleFormOpen(false)}
         clientId={id || ""}
         clientName={`${client.name} ${client.lastname}`}
+        isOpen={isSaleFormOpen}
+        onClose={() => setIsSaleFormOpen(false)}
       />
 
       {isEditFormOpen && client && (
         <ClientForm
-          isOpen={isEditFormOpen}
-          onClose={() => setIsEditFormOpen(false)}
-          onSubmit={handleFormSubmit}
           initialData={client}
+          isLoading={editMutation.isPending}
+          isOpen={isEditFormOpen}
+          submitText="Guardar Cambios"
           title={
             <div className="flex items-center gap-2">
               <LiaUserEditSolid className="text-2xl text-primary" />
               <span>Editar Cliente</span>
             </div>
           }
-          submitText="Guardar Cambios"
-          isLoading={editMutation.isPending}
+          onClose={() => setIsEditFormOpen(false)}
+          onSubmit={handleFormSubmit}
         />
       )}
 
       {client && (
         <ConfirmModal
+          isLoading={deleteMutation.isPending}
           isOpen={isConfirmDeleteOpen}
+          message={`¿Estás seguro de que quieres eliminar al cliente ${client.name} ${client.lastname}? Esta acción no se puede deshacer y eliminará todas sus ventas asociadas.`}
+          title="Confirmar Eliminación"
           onClose={() => setIsConfirmDeleteOpen(false)}
           onConfirm={handleConfirmDelete}
-          title="Confirmar Eliminación"
-          message={`¿Estás seguro de que quieres eliminar al cliente ${client.name} ${client.lastname}? Esta acción no se puede deshacer y eliminará todas sus ventas asociadas.`}
-          isLoading={deleteMutation.isPending}
         />
       )}
 
       {/* Modal de confirmación para eliminar venta */}
       {isDeleteSaleModalOpen && selectedSale && (
-        <Modal isOpen={isDeleteSaleModalOpen} onClose={() => setIsDeleteSaleModalOpen(false)} size="md">
+        <Modal
+          isOpen={isDeleteSaleModalOpen}
+          size="md"
+          onClose={() => setIsDeleteSaleModalOpen(false)}
+        >
           <ModalContent>
             <ModalHeader className="flex flex-col gap-1">
               <div className="flex items-center gap-2">
@@ -1550,9 +1752,12 @@ export default function ClienteDetallePage() {
             <ModalBody>
               <div className="space-y-4">
                 <div className="p-4 bg-danger-50 rounded-lg">
-                  <h4 className="font-medium mb-2 text-danger">Confirmar Eliminación</h4>
+                  <h4 className="font-medium mb-2 text-danger">
+                    Confirmar Eliminación
+                  </h4>
                   <p className="text-sm text-default-600">
-                    ¿Estás seguro de que quieres eliminar esta venta? Esta acción no se puede deshacer.
+                    ¿Estás seguro de que quieres eliminar esta venta? Esta
+                    acción no se puede deshacer.
                   </p>
                 </div>
 
@@ -1565,40 +1770,58 @@ export default function ClienteDetallePage() {
                     </div>
                     <div>
                       <p className="text-default-500">Descripción:</p>
-                      <p className="font-medium">{selectedSale?.description || "Sin descripción"}</p>
+                      <p className="font-medium">
+                        {selectedSale?.description || "Sin descripción"}
+                      </p>
                     </div>
                     <div>
                       <p className="text-default-500">Monto total:</p>
-                      <p className="font-medium text-danger">{formatCurrency(selectedSale?.amount || 0)}</p>
+                      <p className="font-medium text-danger">
+                        {formatCurrency(selectedSale?.amount || 0)}
+                      </p>
                     </div>
                     <div>
                       <p className="text-default-500">Fecha:</p>
                       <p className="font-medium">
-                        {selectedSale?.date ? formatDate(selectedSale.date) : "Sin fecha"}
+                        {selectedSale?.date
+                          ? formatDate(selectedSale.date)
+                          : "Sin fecha"}
                       </p>
                     </div>
                   </div>
                 </div>
 
                 <div className="p-4 bg-warning-50 rounded-lg">
-                  <h4 className="font-medium mb-2 text-warning">Impacto de la Eliminación</h4>
+                  <h4 className="font-medium mb-2 text-warning">
+                    Impacto de la Eliminación
+                  </h4>
                   <div className="space-y-2 text-sm">
-                    <p>• Se eliminarán todas las cuotas asociadas a esta venta</p>
-                    <p>• Se eliminarán todos los pagos registrados para estas cuotas</p>
-                    <p>• Se eliminarán todos los productos asociados a esta venta</p>
+                    <p>
+                      • Se eliminarán todas las cuotas asociadas a esta venta
+                    </p>
+                    <p>
+                      • Se eliminarán todos los pagos registrados para estas
+                      cuotas
+                    </p>
+                    <p>
+                      • Se eliminarán todos los productos asociados a esta venta
+                    </p>
                     <p>• Se recalculará el estado del cliente</p>
                   </div>
                 </div>
               </div>
             </ModalBody>
             <ModalFooter>
-              <Button variant="light" onPress={() => setIsDeleteSaleModalOpen(false)}>
+              <Button
+                variant="light"
+                onPress={() => setIsDeleteSaleModalOpen(false)}
+              >
                 Cancelar
               </Button>
               <Button
                 color="danger"
-                onPress={confirmDeleteSale}
                 isLoading={deleteSaleMutation.isPending}
+                onPress={confirmDeleteSale}
               >
                 Eliminar Venta
               </Button>
@@ -1608,4 +1831,4 @@ export default function ClienteDetallePage() {
       )}
     </DefaultLayout>
   );
-} 
+}

@@ -1,7 +1,12 @@
 import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import DefaultLayout from "@/layouts/default";
-import { RiUserLine, RiSearchLine, RiEyeLine, RiEditLine, RiDeleteBinLine } from "react-icons/ri";
+import {
+  RiUserLine,
+  RiSearchLine,
+  RiEyeLine,
+  RiEditLine,
+  RiDeleteBinLine,
+} from "react-icons/ri";
 import { IoPersonAddOutline } from "react-icons/io5";
 import { LiaUserEditSolid } from "react-icons/lia";
 import { Input } from "@heroui/input";
@@ -9,18 +14,27 @@ import { Button } from "@heroui/button";
 import { Spinner } from "@heroui/spinner";
 import { Tooltip } from "@heroui/tooltip";
 import { Chip } from "@heroui/chip";
-import { Table, TableHeader, TableColumn, TableBody, TableRow, TableCell } from "@heroui/table";
+import {
+  Table,
+  TableHeader,
+  TableColumn,
+  TableBody,
+  TableRow,
+  TableCell,
+} from "@heroui/table";
 import { useAsyncList, AsyncListLoadOptions } from "@react-stately/data";
 import { useInfiniteScroll } from "@heroui/use-infinite-scroll";
 import { addToast } from "@heroui/toast";
+import axios from "axios";
+
 import { Client, ClientDetail, clientsApi, ApiClientsResponse } from "@/api";
 import ClientForm from "@/components/ClientForm";
 import ConfirmModal from "@/components/ConfirmModal";
-import axios from "axios";
+import DefaultLayout from "@/layouts/default";
 
 const statusColorMap = {
   1: "success",
-  2: "warning", 
+  2: "warning",
   3: "danger",
 } as const;
 
@@ -44,54 +58,65 @@ export default function ClientesPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [hasMore, setHasMore] = useState(false);
 
-  const loadClients = useCallback(async ({ signal, cursor, filterText }: AsyncListLoadOptions<Client, string>) => {
-    // When loading more, the top-level isLoading should be false
-    setIsLoading(!cursor);
-    
-    try {
-      const page = cursor ? parseInt(cursor, 10) : 1;
-      const limit = 10;
-      const offset = (page - 1) * limit;
+  const loadClients = useCallback(
+    async ({
+      signal,
+      cursor,
+      filterText,
+    }: AsyncListLoadOptions<Client, string>) => {
+      // When loading more, the top-level isLoading should be false
+      setIsLoading(!cursor);
 
-      const response: ApiClientsResponse = await clientsApi.getAll({ 
-        offset, 
-        limit, 
-        search: filterText, 
-        signal 
-      });
-      
-      setHasMore(response.count > page * limit);
-      setTotalClients(response.count);
-      
-      return {
-        items: response.results || [],
-        cursor: response.count > page * limit ? (page + 1).toString() : undefined,
-      };
-    } catch (error) {
-      if (axios.isCancel(error)) {
-        console.log("Request canceled");
-        // This part is tricky, returning previous state might be complex.
-        // For now, returning an empty list on cancel is safer.
-        return { items: [], cursor: undefined };
+      try {
+        const page = cursor ? parseInt(cursor, 10) : 1;
+        const limit = 10;
+        const offset = (page - 1) * limit;
+
+        const response: ApiClientsResponse = await clientsApi.getAll({
+          offset,
+          limit,
+          search: filterText,
+          signal,
+        });
+
+        setHasMore(response.count > page * limit);
+        setTotalClients(response.count);
+
+        return {
+          items: response.results || [],
+          cursor:
+            response.count > page * limit ? (page + 1).toString() : undefined,
+        };
+      } catch (error) {
+        if (axios.isCancel(error)) {
+          // Request was canceled
+
+          // This part is tricky, returning previous state might be complex.
+          // For now, returning an empty list on cancel is safer.
+          return { items: [], cursor: undefined };
+        }
+
+        console.error("Error loading clients:", error);
+        addToast({
+          title: "Error al cargar clientes",
+          description:
+            "No se pudieron cargar los clientes. Inténtalo de nuevo.",
+          color: "danger",
+        });
+
+        return {
+          items: [],
+          cursor: undefined,
+        };
+      } finally {
+        // Ensure loading is always false when done, for both success and error
+        if (!cursor) {
+          setIsLoading(false);
+        }
       }
-      
-      console.error("Error loading clients:", error);
-      addToast({
-        title: "Error al cargar clientes",
-        description: "No se pudieron cargar los clientes. Inténtalo de nuevo.",
-        color: "danger",
-      });
-      return {
-        items: [],
-        cursor: undefined,
-      };
-    } finally {
-      // Ensure loading is always false when done, for both success and error
-      if (!cursor) {
-        setIsLoading(false);
-      }
-    }
-  }, []);
+    },
+    [],
+  );
 
   // Use AsyncList for infinite scroll with HeroUI Table
   const list = useAsyncList<Client>({
@@ -113,13 +138,13 @@ export default function ClientesPage() {
     onLoadMore: list.loadMore,
   });
 
-  const handleCreateClient = async (clientData: Omit<ClientDetail, 'id'>) => {
+  const handleCreateClient = async (clientData: Omit<ClientDetail, "id">) => {
     setIsSubmitting(true);
     try {
       await clientsApi.create(clientData);
       // Reload the list
       list.reload();
-      
+
       addToast({
         title: "Cliente creado",
         description: "El cliente se ha creado exitosamente",
@@ -127,10 +152,13 @@ export default function ClientesPage() {
       });
     } catch (error: any) {
       console.error("Error creating client:", error);
-      
+
       // Extract error message from API response
-      const errorMessage = error.response?.data?.msg || error.message || "No se pudo crear el cliente. Inténtalo de nuevo.";
-      
+      const errorMessage =
+        error.response?.data?.msg ||
+        error.message ||
+        "No se pudo crear el cliente. Inténtalo de nuevo.";
+
       addToast({
         title: "Error al crear cliente",
         description: errorMessage,
@@ -142,15 +170,15 @@ export default function ClientesPage() {
     }
   };
 
-  const handleUpdateClient = async (clientData: Omit<ClientDetail, 'id'>) => {
+  const handleUpdateClient = async (clientData: Omit<ClientDetail, "id">) => {
     if (!editingClient) return;
-    
+
     setIsSubmitting(true);
     try {
       await clientsApi.update(editingClient.id, clientData);
       // Reload the list
       list.reload();
-      
+
       addToast({
         title: "Cliente actualizado",
         description: "El cliente se ha actualizado exitosamente",
@@ -158,10 +186,13 @@ export default function ClientesPage() {
       });
     } catch (error: any) {
       console.error("Error updating client:", error);
-      
+
       // Extract error message from API response
-      const errorMessage = error.response?.data?.msg || error.message || "No se pudo actualizar el cliente. Inténtalo de nuevo.";
-      
+      const errorMessage =
+        error.response?.data?.msg ||
+        error.message ||
+        "No se pudo actualizar el cliente. Inténtalo de nuevo.";
+
       addToast({
         title: "Error al actualizar cliente",
         description: errorMessage,
@@ -177,14 +208,18 @@ export default function ClientesPage() {
     try {
       // Fetch full client details
       const clientDetail = await clientsApi.getById(client.id);
+
       setEditingClient(clientDetail);
       setIsFormOpen(true);
     } catch (error: any) {
       console.error("Error fetching client details:", error);
-      
+
       // Extract error message from API response
-      const errorMessage = error.response?.data?.msg || error.message || "No se pudieron cargar los datos del cliente.";
-      
+      const errorMessage =
+        error.response?.data?.msg ||
+        error.message ||
+        "No se pudieron cargar los datos del cliente.";
+
       addToast({
         title: "Error al cargar cliente",
         description: errorMessage,
@@ -220,22 +255,25 @@ export default function ClientesPage() {
       await clientsApi.delete(deletingClient.id);
       // Reload the list
       list.reload();
-      
+
       addToast({
         title: "Cliente eliminado",
         description: `${deletingClient.name} ${deletingClient.lastname} ha sido eliminado exitosamente`,
         color: "success",
       });
-      
+
       // Close modal and reset state
       setIsDeleteModalOpen(false);
       setDeletingClient(null);
     } catch (error: any) {
       console.error("Error deleting client:", error);
-      
+
       // Extract error message from API response
-      const errorMessage = error.response?.data?.msg || error.message || "No se pudo eliminar el cliente. Inténtalo de nuevo.";
-      
+      const errorMessage =
+        error.response?.data?.msg ||
+        error.message ||
+        "No se pudo eliminar el cliente. Inténtalo de nuevo.";
+
       addToast({
         title: "Error al eliminar cliente",
         description: errorMessage,
@@ -269,18 +307,20 @@ export default function ClientesPage() {
           </div>
         );
       case "dni":
-        return (
-          <div className="text-sm text-default-900">{client.dni}</div>
-        );
+        return <div className="text-sm text-default-900">{client.dni}</div>;
       case "state":
         return (
-          <Chip 
-            className="capitalize" 
-            color={statusColorMap[client.state?.id as keyof typeof statusColorMap] || "default"} 
-            size="sm" 
+          <Chip
+            className="capitalize"
+            color={
+              statusColorMap[client.state?.id as keyof typeof statusColorMap] ||
+              "default"
+            }
+            size="sm"
             variant="flat"
           >
-            {statusTextMap[client.state?.id as keyof typeof statusTextMap] || "Desconocido"}
+            {statusTextMap[client.state?.id as keyof typeof statusTextMap] ||
+              "Desconocido"}
           </Chip>
         );
       case "actions":
@@ -304,7 +344,7 @@ export default function ClientesPage() {
           </div>
         );
       default:
-        return typeof cellValue === 'object' ? '' : cellValue;
+        return typeof cellValue === "object" ? "" : cellValue;
     }
   }, []);
 
@@ -321,37 +361,43 @@ export default function ClientesPage() {
               <h1 className="text-3xl font-bold bg-gradient-to-r from-primary-600 to-secondary-600 bg-clip-text text-transparent">
                 Clientes
               </h1>
-              <p className="text-default-500">Gestiona tu base de datos de clientes</p>
+              <p className="text-default-500">
+                Gestiona tu base de datos de clientes
+              </p>
             </div>
           </div>
-          <Button
-            color="primary"
-            variant="flat"
-            startContent={<IoPersonAddOutline />}
-            onPress={handleOpenCreateForm}
-            className="font-medium"
-          >
-            Crear Cliente
-          </Button>
         </div>
 
         <div className="max-w-7xl w-full px-4">
           {/* Top Content */}
-          <div className="flex flex-col gap-4 mb-6">
-            <div className="flex justify-between gap-3 items-end">
-              <Input
-                isClearable
-                className="w-full sm:max-w-[44%]"
-                placeholder="Buscar por nombre, apellido o DNI..."
-                startContent={<RiSearchLine className="text-default-400" />}
-                value={search}
-                onValueChange={setSearch}
-              />
+          <div className="flex justify-between">
+            <div className="flex flex-col gap-4 mb-6 w-full">
+              <div className="flex justify-between gap-3 items-end">
+                <Input
+                  isClearable
+                  className="w-full sm:max-w-[44%]"
+                  placeholder="Buscar por nombre, apellido o DNI..."
+                  startContent={<RiSearchLine className="text-default-400" />}
+                  value={search}
+                  onValueChange={setSearch}
+                />
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-default-400 text-small">
+                  Total {totalClients} clientes
+                </span>
+              </div>
             </div>
-            <div className="flex justify-between items-center">
-              <span className="text-default-400 text-small">
-                Total {totalClients} clientes
-              </span>
+            <div className="flex justify-end items-end pb-6">
+              <Button
+                className="font-medium w-full sm:w-auto"
+                color="primary"
+                startContent={<IoPersonAddOutline />}
+                variant="flat"
+                onPress={handleOpenCreateForm}
+              >
+                Crear Cliente
+              </Button>
             </div>
           </div>
 
@@ -363,7 +409,11 @@ export default function ClientesPage() {
             bottomContent={
               hasMore ? (
                 <div className="flex w-full justify-center">
-                  <Spinner ref={loaderRef} classNames={{label: "text-foreground mt-4"}} variant="wave"/>
+                  <Spinner
+                    ref={loaderRef}
+                    classNames={{ label: "text-foreground mt-4" }}
+                    variant="wave"
+                  />
                 </div>
               ) : null
             }
@@ -374,20 +424,30 @@ export default function ClientesPage() {
           >
             <TableHeader columns={columns}>
               {(column) => (
-                <TableColumn key={column.uid} align={column.uid === "actions" ? "center" : "start"}>
+                <TableColumn
+                  key={column.uid}
+                  align={column.uid === "actions" ? "center" : "start"}
+                >
                   {column.name}
                 </TableColumn>
               )}
             </TableHeader>
             <TableBody
-              items={list.items}
-              isLoading={isLoading}
-              loadingContent={<Spinner classNames={{label: "text-foreground mt-4"}} variant="wave" />}
               emptyContent="No se encontraron clientes"
+              isLoading={isLoading}
+              items={list.items}
+              loadingContent={
+                <Spinner
+                  classNames={{ label: "text-foreground mt-4" }}
+                  variant="wave"
+                />
+              }
             >
               {(item: Client) => (
                 <TableRow key={item.id}>
-                  {(columnKey) => <TableCell>{renderCell(item, columnKey)}</TableCell>}
+                  {(columnKey) => (
+                    <TableCell>{renderCell(item, columnKey)}</TableCell>
+                  )}
                 </TableRow>
               )}
             </TableBody>
@@ -396,10 +456,10 @@ export default function ClientesPage() {
 
         {/* Client Form Modal */}
         <ClientForm
-          isOpen={isFormOpen}
-          onClose={handleCloseForm}
-          onSubmit={editingClient ? handleUpdateClient : handleCreateClient}
           initialData={editingClient || undefined}
+          isLoading={isSubmitting}
+          isOpen={isFormOpen}
+          submitText={editingClient ? "Actualizar Cliente" : "Crear Cliente"}
           title={
             <div className="flex items-center gap-2">
               {editingClient ? (
@@ -412,16 +472,16 @@ export default function ClientesPage() {
               </h2>
             </div>
           }
-          submitText={editingClient ? "Actualizar Cliente" : "Crear Cliente"}
-          isLoading={isSubmitting}
+          onClose={handleCloseForm}
+          onSubmit={editingClient ? handleUpdateClient : handleCreateClient}
         />
 
         {/* Delete Confirmation Modal */}
         <ConfirmModal
+          cancelText="Cancelar"
+          confirmText="Eliminar"
+          isLoading={isDeleting}
           isOpen={isDeleteModalOpen}
-          onClose={handleCloseDeleteModal}
-          onConfirm={handleConfirmDelete}
-          title="Eliminar Cliente"
           message={`¿Estás seguro de que quieres eliminar a ${deletingClient?.name} ${deletingClient?.lastname}?
 
 Esta acción eliminará permanentemente:
@@ -432,11 +492,11 @@ Esta acción eliminará permanentemente:
 • Todas las notas relacionadas
 
 Esta acción no se puede deshacer.`}
-          confirmText="Eliminar"
-          cancelText="Cancelar"
-          isLoading={isDeleting}
+          title="Eliminar Cliente"
+          onClose={handleCloseDeleteModal}
+          onConfirm={handleConfirmDelete}
         />
       </section>
     </DefaultLayout>
   );
-} 
+}

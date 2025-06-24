@@ -1,4 +1,10 @@
-import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter } from "@heroui/modal";
+import {
+  Modal,
+  ModalContent,
+  ModalHeader,
+  ModalBody,
+  ModalFooter,
+} from "@heroui/modal";
 import { Button } from "@heroui/button";
 import { RiErrorWarningLine } from "react-icons/ri";
 
@@ -26,14 +32,14 @@ export default function ConfirmModal({
   if (!isOpen) return null;
 
   // Split message by lines and render each line
-  const messageLines = message.split('\n').map((line, index) => (
-    <div key={index} className={line.trim() === '' ? 'h-2' : ''}>
+  const messageLines = message.split("\n").map((line, index) => (
+    <div key={index} className={line.trim() === "" ? "h-2" : ""}>
       {line}
     </div>
   ));
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} size="md">
+    <Modal isOpen={isOpen} size="md" onClose={onClose}>
       <ModalContent>
         <ModalHeader className="flex flex-col gap-1">
           <div className="flex items-center gap-3">
@@ -47,23 +53,19 @@ export default function ConfirmModal({
           </div>
         </ModalBody>
         <ModalFooter>
-          <Button 
-            color="default" 
-            variant="light" 
-            onPress={onClose}
+          <Button
+            color="default"
             isDisabled={isLoading}
+            variant="light"
+            onPress={onClose}
           >
             {cancelText}
           </Button>
-          <Button 
-            color="danger" 
-            onPress={onConfirm}
-            isLoading={isLoading}
-          >
+          <Button color="danger" isLoading={isLoading} onPress={onConfirm}>
             {confirmText}
           </Button>
         </ModalFooter>
       </ModalContent>
     </Modal>
   );
-} 
+}

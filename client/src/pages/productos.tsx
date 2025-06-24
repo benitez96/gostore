@@ -5,30 +5,45 @@ import { Input } from "@heroui/input";
 import { Spinner } from "@heroui/spinner";
 import { Tooltip } from "@heroui/tooltip";
 import { Chip } from "@heroui/chip";
-import { Table, TableHeader, TableColumn, TableBody, TableRow, TableCell } from "@heroui/table";
-import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter } from "@heroui/modal";
+import {
+  Table,
+  TableHeader,
+  TableColumn,
+  TableBody,
+  TableRow,
+  TableCell,
+} from "@heroui/table";
+import {
+  Modal,
+  ModalContent,
+  ModalHeader,
+  ModalBody,
+  ModalFooter,
+} from "@heroui/modal";
 import { Accordion, AccordionItem } from "@heroui/accordion";
-import { Divider } from "@heroui/divider";
 import { useAsyncList, AsyncListLoadOptions } from "@react-stately/data";
 import { useInfiniteScroll } from "@heroui/use-infinite-scroll";
 import { addToast } from "@heroui/toast";
-import DefaultLayout from "@/layouts/default";
-import { 
-  RiShoppingBagLine, 
-  RiSearchLine, 
-  RiEditLine, 
+import {
+  RiShoppingBagLine,
+  RiSearchLine,
+  RiEditLine,
   RiDeleteBinLine,
   RiAddLine,
   RiInformationLine,
   RiMoneyDollarCircleLine,
   RiStockLine,
   RiCalendarLine,
-  RiRefreshLine
+  RiRefreshLine,
 } from "react-icons/ri";
-import { api } from "../api";
-import { Product } from "../types";
-import ConfirmModal from "@/components/ConfirmModal";
 import axios from "axios";
+
+import { useCatalogStatsShortcut } from "../hooks/useShortcut";
+import { Product, ProductStats } from "../types";
+import { api } from "../api";
+
+import ConfirmModal from "@/components/ConfirmModal";
+import DefaultLayout from "@/layouts/default";
 
 interface ProductFormData {
   name: string;
@@ -59,7 +74,13 @@ interface StockUpdateModalProps {
   isLoading?: boolean;
 }
 
-function StockUpdateModal({ isOpen, onClose, onSubmit, product, isLoading }: StockUpdateModalProps) {
+function StockUpdateModal({
+  isOpen,
+  onClose,
+  onSubmit,
+  product,
+  isLoading,
+}: StockUpdateModalProps) {
   const [stock, setStock] = useState(0);
 
   useEffect(() => {
@@ -75,6 +96,7 @@ function StockUpdateModal({ isOpen, onClose, onSubmit, product, isLoading }: Sto
         description: "El stock no puede ser negativo",
         color: "danger",
       });
+
       return;
     }
 
@@ -82,7 +104,7 @@ function StockUpdateModal({ isOpen, onClose, onSubmit, product, isLoading }: Sto
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} size="md">
+    <Modal isOpen={isOpen} size="md" onClose={onClose}>
       <ModalContent>
         <ModalHeader className="flex flex-col gap-1">
           <div className="flex items-center gap-2">
@@ -96,14 +118,14 @@ function StockUpdateModal({ isOpen, onClose, onSubmit, product, isLoading }: Sto
               Producto: <span className="font-medium">{product?.name}</span>
             </div>
             <Input
+              isRequired
               label="Nuevo stock"
               labelPlacement="outside"
+              min="0"
               placeholder="0"
               type="number"
-              min="0"
               value={stock.toString()}
               onChange={(e) => setStock(parseInt(e.target.value) || 0)}
-              isRequired
             />
           </div>
         </ModalBody>
@@ -111,11 +133,7 @@ function StockUpdateModal({ isOpen, onClose, onSubmit, product, isLoading }: Sto
           <Button variant="light" onPress={onClose}>
             Cancelar
           </Button>
-          <Button
-            color="primary"
-            onPress={handleSubmit}
-            isLoading={isLoading}
-          >
+          <Button color="primary" isLoading={isLoading} onPress={handleSubmit}>
             Actualizar Stock
           </Button>
         </ModalFooter>
@@ -124,7 +142,15 @@ function StockUpdateModal({ isOpen, onClose, onSubmit, product, isLoading }: Sto
   );
 }
 
-function ProductForm({ isOpen, onClose, onSubmit, initialData, title, submitText, isLoading }: ProductFormProps) {
+function ProductForm({
+  isOpen,
+  onClose,
+  onSubmit,
+  initialData,
+  title,
+  submitText,
+  isLoading,
+}: ProductFormProps) {
   const [formData, setFormData] = useState<ProductFormData>({
     name: "",
     cost: 0,
@@ -157,6 +183,7 @@ function ProductForm({ isOpen, onClose, onSubmit, initialData, title, submitText
         description: "El nombre del producto es requerido",
         color: "danger",
       });
+
       return;
     }
 
@@ -166,6 +193,7 @@ function ProductForm({ isOpen, onClose, onSubmit, initialData, title, submitText
         description: "Los valores no pueden ser negativos",
         color: "danger",
       });
+
       return;
     }
 
@@ -173,9 +201,9 @@ function ProductForm({ isOpen, onClose, onSubmit, initialData, title, submitText
   };
 
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('es-AR', {
-      style: 'currency',
-      currency: 'ARS'
+    return new Intl.NumberFormat("es-AR", {
+      style: "currency",
+      currency: "ARS",
     }).format(amount);
   };
 
@@ -183,7 +211,7 @@ function ProductForm({ isOpen, onClose, onSubmit, initialData, title, submitText
   const profitMargin = formData.cost > 0 ? (profit / formData.price) * 100 : 0;
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} size="2xl">
+    <Modal isOpen={isOpen} size="2xl" onClose={onClose}>
       <ModalContent>
         <ModalHeader className="flex flex-col gap-1">
           <div className="flex items-center gap-2">
@@ -194,55 +222,72 @@ function ProductForm({ isOpen, onClose, onSubmit, initialData, title, submitText
         <ModalBody>
           <div className="space-y-4">
             <Input
+              isRequired
               label="Nombre del producto"
               labelPlacement="outside"
               placeholder="Ej: Lavarropas automático"
               value={formData.name}
-              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              isRequired
+              onChange={(e) =>
+                setFormData({ ...formData, name: e.target.value })
+              }
             />
-            
+
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <Input
                 label="Costo"
                 labelPlacement="outside"
-                placeholder="0.00"
-                type="number"
                 min="0"
-                step="0.01"
-                value={formData.cost.toString()}
-                onChange={(e) => setFormData({ ...formData, cost: parseFloat(e.target.value) || 0 })}
+                placeholder="0.00"
                 startContent={
                   <div className="pointer-events-none flex items-center">
                     <span className="text-default-400 text-small">$</span>
                   </div>
                 }
+                step="0.01"
+                type="number"
+                value={formData.cost.toString()}
+                onChange={(e) =>
+                  setFormData({
+                    ...formData,
+                    cost: parseFloat(e.target.value) || 0,
+                  })
+                }
               />
-              
+
               <Input
                 label="Precio de venta"
                 labelPlacement="outside"
-                placeholder="0.00"
-                type="number"
                 min="0"
-                step="0.01"
-                value={formData.price.toString()}
-                onChange={(e) => setFormData({ ...formData, price: parseFloat(e.target.value) || 0 })}
+                placeholder="0.00"
                 startContent={
                   <div className="pointer-events-none flex items-center">
                     <span className="text-default-400 text-small">$</span>
                   </div>
                 }
+                step="0.01"
+                type="number"
+                value={formData.price.toString()}
+                onChange={(e) =>
+                  setFormData({
+                    ...formData,
+                    price: parseFloat(e.target.value) || 0,
+                  })
+                }
               />
-              
+
               <Input
                 label="Stock disponible"
                 labelPlacement="outside"
+                min="0"
                 placeholder="0"
                 type="number"
-                min="0"
                 value={formData.stock.toString()}
-                onChange={(e) => setFormData({ ...formData, stock: parseInt(e.target.value) || 0 })}
+                onChange={(e) =>
+                  setFormData({
+                    ...formData,
+                    stock: parseInt(e.target.value) || 0,
+                  })
+                }
               />
             </div>
 
@@ -255,13 +300,17 @@ function ProductForm({ isOpen, onClose, onSubmit, initialData, title, submitText
               <div className="grid grid-cols-2 gap-4 text-sm">
                 <div className="flex justify-between">
                   <span className="text-default-600">Ganancia por unidad:</span>
-                  <span className={`font-medium ${profit >= 0 ? 'text-success' : 'text-danger'}`}>
+                  <span
+                    className={`font-medium ${profit >= 0 ? "text-success" : "text-danger"}`}
+                  >
                     {formatCurrency(profit)}
                   </span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-default-600">Margen de ganancia:</span>
-                  <span className={`font-medium ${profitMargin >= 0 ? 'text-success' : 'text-danger'}`}>
+                  <span
+                    className={`font-medium ${profitMargin >= 0 ? "text-success" : "text-danger"}`}
+                  >
                     {profitMargin.toFixed(2)}%
                   </span>
                 </div>
@@ -273,11 +322,7 @@ function ProductForm({ isOpen, onClose, onSubmit, initialData, title, submitText
           <Button variant="light" onPress={onClose}>
             Cancelar
           </Button>
-          <Button
-            color="primary"
-            onPress={handleSubmit}
-            isLoading={isLoading}
-          >
+          <Button color="primary" isLoading={isLoading} onPress={handleSubmit}>
             {submitText}
           </Button>
         </ModalFooter>
@@ -298,54 +343,92 @@ export default function ProductosPage() {
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [productToDelete, setProductToDelete] = useState<Product | null>(null);
   const [isStockUpdateModalOpen, setIsStockUpdateModalOpen] = useState(false);
-  const [productToUpdateStock, setProductToUpdateStock] = useState<Product | null>(null);
+  const [productToUpdateStock, setProductToUpdateStock] =
+    useState<Product | null>(null);
+  const [showStats, setShowStats] = useState(false);
 
-  const loadProducts = useCallback(async ({ signal, cursor, filterText }: AsyncListLoadOptions<Product, string>) => {
-    try {
-      const page = cursor ? parseInt(cursor, 10) : 1;
-      const limit = 10;
-      const offset = (page - 1) * limit;
+  // Hook para el shortcut de estadísticas del catálogo
+  useCatalogStatsShortcut(() => {
+    setShowStats((prev) => !prev);
+  });
 
-      const response = await api.get("/api/products", {
-        params: { 
-          offset, 
-          limit, 
-          search: filterText 
-        },
-        signal 
-      });
-      
-      const products = response.data.results || response.data || [];
-      const count = response.data.count || products.length;
-      
-      setHasMore(count > page * limit);
-      setTotalProducts(count);
-      
-      return {
-        items: products,
-        cursor: count > page * limit ? (page + 1).toString() : undefined,
-      };
-    } catch (error) {
-      if (axios.isCancel(error)) {
-        return { items: [], cursor: undefined };
+  // Query para obtener estadísticas de productos
+  const { data: productStats, isLoading: statsLoading } =
+    useQuery<ProductStats>({
+      queryKey: ["product-stats"],
+      queryFn: async () => {
+        const response = await api.get("/api/products-stats");
+
+        return response.data;
+      },
+    });
+
+  const loadProducts = useCallback(
+    async ({
+      signal,
+      cursor,
+      filterText,
+    }: AsyncListLoadOptions<Product, string>) => {
+      try {
+        const page = cursor ? parseInt(cursor, 10) : 1;
+        const limit = 10;
+        const offset = (page - 1) * limit;
+
+        const response = await api.get("/api/products", {
+          params: {
+            offset,
+            limit,
+            search: filterText,
+          },
+          signal,
+        });
+
+        // Handle both paginated and non-paginated responses
+        let products: Product[];
+        let count: number;
+
+        if (response.data.results) {
+          // Paginated response
+          products = response.data.results || [];
+          count = response.data.count || 0;
+        } else {
+          // Non-paginated response (fallback)
+          products = Array.isArray(response.data) ? response.data : [];
+          count = products.length;
+        }
+
+        setHasMore(count > page * limit);
+        setTotalProducts(count);
+
+        return {
+          items: products,
+          cursor: count > page * limit ? (page + 1).toString() : undefined,
+        };
+      } catch (error) {
+        if (axios.isCancel(error)) {
+          return { items: [], cursor: undefined };
+        }
+
+        console.error("Error loading products:", error);
+        addToast({
+          title: "Error al cargar productos",
+          description:
+            "No se pudieron cargar los productos. Inténtalo de nuevo.",
+          color: "danger",
+        });
+
+        return {
+          items: [],
+          cursor: undefined,
+        };
+      } finally {
+        if (!cursor) {
+          setIsLoading(false);
+        }
       }
-      
-      console.error("Error loading products:", error);
-      addToast({
-        title: "Error al cargar productos",
-        description: "No se pudieron cargar los productos. Inténtalo de nuevo.",
-        color: "danger",
-      });
-      return {
-        items: [],
-        cursor: undefined,
-      };
-    } finally {
-      if (!cursor) {
-        setIsLoading(false);
-      }
-    }
-  }, []);
+    },
+    [],
+  );
 
   const list = useAsyncList<Product>({
     load: loadProducts,
@@ -369,10 +452,12 @@ export default function ProductosPage() {
   const createProductMutation = useMutation({
     mutationFn: async (productData: ProductFormData) => {
       const response = await api.post("/api/products", productData);
+
       return response.data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["products"] });
+      queryClient.invalidateQueries({ queryKey: ["product-stats"] });
       list.reload();
       setIsCreateFormOpen(false);
       addToast({
@@ -388,16 +473,24 @@ export default function ProductosPage() {
         description: "No se pudo crear el producto. Inténtalo de nuevo.",
         color: "danger",
       });
-    }
+    },
   });
 
   const updateProductMutation = useMutation({
-    mutationFn: async ({ id, productData }: { id: string; productData: ProductFormData }) => {
+    mutationFn: async ({
+      id,
+      productData,
+    }: {
+      id: string;
+      productData: ProductFormData;
+    }) => {
       const response = await api.put(`/api/products/${id}`, productData);
+
       return response.data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["products"] });
+      queryClient.invalidateQueries({ queryKey: ["product-stats"] });
       list.reload();
       setIsEditFormOpen(false);
       setSelectedProduct(null);
@@ -414,27 +507,35 @@ export default function ProductosPage() {
         description: "No se pudo actualizar el producto. Inténtalo de nuevo.",
         color: "danger",
       });
-    }
+    },
   });
 
   const updateStockMutation = useMutation({
-    mutationFn: async ({ id, stockData }: { id: string; stockData: StockUpdateData }) => {
+    mutationFn: async ({
+      id,
+      stockData,
+    }: {
+      id: string;
+      stockData: StockUpdateData;
+    }) => {
       if (!productToUpdateStock) {
         throw new Error("Producto no encontrado");
       }
-      
+
       const updatedProductData = {
         name: productToUpdateStock.name,
         cost: productToUpdateStock.cost,
         price: productToUpdateStock.price,
         stock: stockData.stock,
       };
-      
+
       const response = await api.put(`/api/products/${id}`, updatedProductData);
+
       return response.data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["products"] });
+      queryClient.invalidateQueries({ queryKey: ["product-stats"] });
       list.reload();
       setIsStockUpdateModalOpen(false);
       setProductToUpdateStock(null);
@@ -451,7 +552,7 @@ export default function ProductosPage() {
         description: "No se pudo actualizar el stock. Inténtalo de nuevo.",
         color: "danger",
       });
-    }
+    },
   });
 
   const deleteProductMutation = useMutation({
@@ -460,6 +561,7 @@ export default function ProductosPage() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["products"] });
+      queryClient.invalidateQueries({ queryKey: ["product-stats"] });
       list.reload();
       setIsDeleteModalOpen(false);
       setProductToDelete(null);
@@ -476,7 +578,7 @@ export default function ProductosPage() {
         description: "No se pudo eliminar el producto. Inténtalo de nuevo.",
         color: "danger",
       });
-    }
+    },
   });
 
   const handleOpenCreateForm = () => {
@@ -504,13 +606,19 @@ export default function ProductosPage() {
 
   const handleUpdateProduct = async (productData: ProductFormData) => {
     if (selectedProduct) {
-      await updateProductMutation.mutateAsync({ id: selectedProduct.id.toString(), productData });
+      await updateProductMutation.mutateAsync({
+        id: selectedProduct.id.toString(),
+        productData,
+      });
     }
   };
 
   const handleUpdateStock = async (stockData: StockUpdateData) => {
     if (productToUpdateStock) {
-      await updateStockMutation.mutateAsync({ id: productToUpdateStock.id.toString(), stockData });
+      await updateStockMutation.mutateAsync({
+        id: productToUpdateStock.id.toString(),
+        stockData,
+      });
     }
   };
 
@@ -521,15 +629,16 @@ export default function ProductosPage() {
   };
 
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('es-AR', {
-      style: 'currency',
-      currency: 'ARS'
+    return new Intl.NumberFormat("es-AR", {
+      style: "currency",
+      currency: "ARS",
     }).format(amount);
   };
 
   const formatDate = (dateString?: string) => {
     if (!dateString) return "Sin fecha";
-    return new Date(dateString).toLocaleDateString('es-AR');
+
+    return new Date(dateString).toLocaleDateString("es-AR");
   };
 
   const columns = [
@@ -538,7 +647,7 @@ export default function ProductosPage() {
     { name: "PRECIO", uid: "price" },
     { name: "STOCK", uid: "stock" },
     { name: "MARGEN", uid: "margin" },
-    { name: "FECHA CREACIÓN", uid: "created_at" },
+    { name: "ACTUALIZADO", uid: "updated_at" },
     { name: "ACCIONES", uid: "actions" },
   ];
 
@@ -563,16 +672,20 @@ export default function ProductosPage() {
         );
       case "price":
         return (
-          <span className="font-medium">
-            {formatCurrency(product.price)}
-          </span>
+          <span className="font-medium">{formatCurrency(product.price)}</span>
         );
       case "stock":
         return (
-          <Chip 
-            color={product.stock > 10 ? "success" : product.stock > 0 ? "warning" : "danger"}
-            variant="flat"
+          <Chip
+            color={
+              product.stock > 10
+                ? "success"
+                : product.stock > 0
+                  ? "warning"
+                  : "danger"
+            }
             size="sm"
+            variant="flat"
           >
             {product.stock} unidades
           </Chip>
@@ -580,18 +693,26 @@ export default function ProductosPage() {
       case "margin":
         return (
           <div className="flex flex-col">
-            <span className={`font-medium ${product.price - product.cost >= 0 ? 'text-success' : 'text-danger'}`}>
+            <span
+              className={`font-medium ${product.price - product.cost >= 0 ? "text-success" : "text-danger"}`}
+            >
               {formatCurrency(product.price - product.cost)}
             </span>
             <span className="text-tiny text-default-400">
-              {product.cost > 0 ? ((product.price - product.cost) / product.price * 100).toFixed(1) : 0}%
+              {product.cost > 0
+                ? (
+                    ((product.price - product.cost) / product.price) *
+                    100
+                  ).toFixed(1)
+                : 0}
+              %
             </span>
           </div>
         );
-      case "created_at":
+      case "updated_at":
         return (
           <span className="text-default-500 text-sm">
-            {formatDate(product.created_at)}
+            {formatDate(product.updated_at)}
           </span>
         );
       case "actions":
@@ -599,7 +720,9 @@ export default function ProductosPage() {
           <div className="flex gap-2 justify-center">
             <Tooltip content="Actualizar stock">
               <span className="text-lg text-default-400 cursor-pointer active:opacity-50">
-                <RiRefreshLine onClick={() => handleOpenStockUpdateModal(product)} />
+                <RiRefreshLine
+                  onClick={() => handleOpenStockUpdateModal(product)}
+                />
               </span>
             </Tooltip>
             <Tooltip content="Editar">
@@ -609,13 +732,15 @@ export default function ProductosPage() {
             </Tooltip>
             <Tooltip content="Eliminar">
               <span className="text-lg text-danger cursor-pointer active:opacity-50">
-                <RiDeleteBinLine onClick={() => handleOpenDeleteModal(product)} />
+                <RiDeleteBinLine
+                  onClick={() => handleOpenDeleteModal(product)}
+                />
               </span>
             </Tooltip>
           </div>
         );
       default:
-        return typeof cellValue === 'object' ? '' : cellValue;
+        return typeof cellValue === "object" ? "" : cellValue;
     }
   }, []);
 
@@ -632,37 +757,43 @@ export default function ProductosPage() {
               <h1 className="text-3xl font-bold bg-gradient-to-r from-primary-600 to-secondary-600 bg-clip-text text-transparent">
                 Productos
               </h1>
-              <p className="text-default-500">Administra tu catálogo de productos</p>
+              <p className="text-default-500">
+                Administra tu catálogo de productos
+              </p>
             </div>
           </div>
-          <Button
-            color="primary"
-            variant="flat"
-            startContent={<RiAddLine />}
-            onPress={handleOpenCreateForm}
-            className="font-medium"
-          >
-            Crear Producto
-          </Button>
         </div>
 
         <div className="max-w-7xl w-full px-4">
           {/* Top Content */}
-          <div className="flex flex-col gap-4 mb-6">
-            <div className="flex justify-between gap-3 items-end">
-              <Input
-                isClearable
-                className="w-full sm:max-w-[44%]"
-                placeholder="Buscar productos..."
-                startContent={<RiSearchLine className="text-default-400" />}
-                value={search}
-                onValueChange={setSearch}
-              />
+          <div className="flex justify-between">
+            <div className="flex flex-col gap-4 mb-6 w-full">
+              <div className="flex justify-between gap-3 items-end">
+                <Input
+                  isClearable
+                  className="w-full sm:max-w-[44%]"
+                  placeholder="Buscar productos..."
+                  startContent={<RiSearchLine className="text-default-400" />}
+                  value={search}
+                  onValueChange={setSearch}
+                />
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-default-400 text-small">
+                  Total {totalProducts} productos
+                </span>
+              </div>
             </div>
-            <div className="flex justify-between items-center">
-              <span className="text-default-400 text-small">
-                Total {totalProducts} productos
-              </span>
+            <div className="flex justify-end items-end pb-6">
+              <Button
+                className="font-medium w-full sm:w-auto"
+                color="primary"
+                startContent={<RiAddLine />}
+                variant="flat"
+                onPress={handleOpenCreateForm}
+              >
+                Crear Producto
+              </Button>
             </div>
           </div>
 
@@ -674,7 +805,11 @@ export default function ProductosPage() {
             bottomContent={
               hasMore ? (
                 <div className="flex w-full justify-center">
-                  <Spinner ref={loaderRef} classNames={{label: "text-foreground mt-4"}} variant="wave"/>
+                  <Spinner
+                    ref={loaderRef}
+                    classNames={{ label: "text-foreground mt-4" }}
+                    variant="wave"
+                  />
                 </div>
               ) : null
             }
@@ -685,127 +820,161 @@ export default function ProductosPage() {
           >
             <TableHeader columns={columns}>
               {(column) => (
-                <TableColumn key={column.uid} align={column.uid === "actions" ? "center" : "start"}>
+                <TableColumn
+                  key={column.uid}
+                  align={column.uid === "actions" ? "center" : "start"}
+                >
                   {column.name}
                 </TableColumn>
               )}
             </TableHeader>
             <TableBody
-              items={list.items}
-              isLoading={isLoading}
-              loadingContent={<Spinner classNames={{label: "text-foreground mt-4"}} variant="wave" />}
               emptyContent={
                 <div className="text-center py-8">
                   <RiShoppingBagLine className="text-4xl mx-auto mb-2 text-default-400" />
-                  <p className="text-default-500">No se encontraron productos</p>
+                  <p className="text-default-500">
+                    No se encontraron productos
+                  </p>
                 </div>
+              }
+              isLoading={isLoading}
+              items={list.items}
+              loadingContent={
+                <Spinner
+                  classNames={{ label: "text-foreground mt-4" }}
+                  variant="wave"
+                />
               }
             >
               {(item: Product) => (
                 <TableRow key={item.id}>
-                  {(columnKey) => <TableCell>{renderCell(item, columnKey)}</TableCell>}
+                  {(columnKey) => (
+                    <TableCell>{renderCell(item, columnKey)}</TableCell>
+                  )}
                 </TableRow>
               )}
             </TableBody>
           </Table>
 
           {/* Estadísticas con Accordion */}
-          <div className="mt-6">
-            <Accordion variant="splitted" className="gap-2 px-0">
-              <AccordionItem
-                key="stats"
-                aria-label="Estadísticas de productos"
-                title={
-                  <div className="flex items-center gap-2">
-                    <RiInformationLine className="text-primary" />
-                    <span>Estadísticas del catálogo</span>
-                  </div>
-                }
-              >
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-4 p-4">
-                  <div className="bg-default-50 rounded-lg p-4 text-center">
-                    <RiShoppingBagLine className="text-2xl text-primary mx-auto mb-2" />
-                    <p className="text-2xl font-bold">{totalProducts}</p>
-                    <p className="text-sm text-default-500">Total productos</p>
-                  </div>
-                  
-                  <div className="bg-default-50 rounded-lg p-4 text-center">
-                    <RiMoneyDollarCircleLine className="text-2xl text-success mx-auto mb-2" />
-                    <p className="text-2xl font-bold text-success">
-                      {formatCurrency(list.items.reduce((total, p) => total + p.price, 0))}
-                    </p>
-                    <p className="text-sm text-default-500">Valor total</p>
-                  </div>
+          {showStats && (
+            <div className="mt-6">
+              <Accordion className="gap-2 px-0" variant="splitted">
+                <AccordionItem
+                  key="stats"
+                  aria-label="Estadísticas de productos"
+                  title={
+                    <div className="flex items-center gap-2">
+                      <RiInformationLine className="text-primary" />
+                      <span>Estadísticas del catálogo</span>
+                    </div>
+                  }
+                >
+                  <div className="grid grid-cols-1 md:grid-cols-5 gap-4 p-4">
+                    <div className="bg-default-50 rounded-lg p-4 text-center">
+                      <RiShoppingBagLine className="text-2xl text-primary mx-auto mb-2" />
+                      <p className="text-2xl font-bold">
+                        {statsLoading
+                          ? "..."
+                          : productStats?.total_products || 0}
+                      </p>
+                      <p className="text-sm text-default-500">
+                        Total productos
+                      </p>
+                    </div>
 
-                  <div className="bg-default-50 rounded-lg p-4 text-center">
-                    <RiStockLine className="text-2xl text-warning mx-auto mb-2" />
-                    <p className="text-2xl font-bold text-warning">
-                      {list.items.reduce((total, p) => total + p.stock, 0)}
-                    </p>
-                    <p className="text-sm text-default-500">Stock total</p>
+                    <div className="bg-default-50 rounded-lg p-4 text-center">
+                      <RiMoneyDollarCircleLine className="text-2xl text-danger mx-auto mb-2" />
+                      <p className="text-2xl font-bold text-danger">
+                        {statsLoading
+                          ? "..."
+                          : formatCurrency(productStats?.total_cost || 0)}
+                      </p>
+                      <p className="text-sm text-default-500">Costo total</p>
+                    </div>
+
+                    <div className="bg-default-50 rounded-lg p-4 text-center">
+                      <RiMoneyDollarCircleLine className="text-2xl text-success mx-auto mb-2" />
+                      <p className="text-2xl font-bold text-success">
+                        {statsLoading
+                          ? "..."
+                          : formatCurrency(productStats?.total_value || 0)}
+                      </p>
+                      <p className="text-sm text-default-500">Valor total</p>
+                    </div>
+
+                    <div className="bg-default-50 rounded-lg p-4 text-center">
+                      <RiStockLine className="text-2xl text-warning mx-auto mb-2" />
+                      <p className="text-2xl font-bold text-warning">
+                        {statsLoading ? "..." : productStats?.total_stock || 0}
+                      </p>
+                      <p className="text-sm text-default-500">Stock total</p>
+                    </div>
+
+                    <div className="bg-default-50 rounded-lg p-4 text-center">
+                      <RiCalendarLine className="text-2xl text-secondary mx-auto mb-2" />
+                      <p className="text-2xl font-bold text-secondary">
+                        {statsLoading
+                          ? "..."
+                          : productStats?.out_of_stock_count || 0}
+                      </p>
+                      <p className="text-sm text-default-500">Sin stock</p>
+                    </div>
                   </div>
-                  
-                  <div className="bg-default-50 rounded-lg p-4 text-center">
-                    <RiCalendarLine className="text-2xl text-secondary mx-auto mb-2" />
-                    <p className="text-2xl font-bold text-secondary">
-                      {list.items.filter(p => p.stock === 0).length}
-                    </p>
-                    <p className="text-sm text-default-500">Sin stock</p>
-                  </div>
-                </div>
-              </AccordionItem>
-            </Accordion>
-          </div>
+                </AccordionItem>
+              </Accordion>
+            </div>
+          )}
         </div>
       </section>
 
       {/* Modals */}
       <ProductForm
+        isLoading={createProductMutation.isPending}
         isOpen={isCreateFormOpen}
+        submitText="Crear Producto"
+        title="Crear Producto"
         onClose={() => setIsCreateFormOpen(false)}
         onSubmit={handleCreateProduct}
-        title="Crear Producto"
-        submitText="Crear Producto"
-        isLoading={createProductMutation.isPending}
       />
 
       <ProductForm
+        initialData={selectedProduct || undefined}
+        isLoading={updateProductMutation.isPending}
         isOpen={isEditFormOpen}
+        submitText="Actualizar Producto"
+        title="Editar Producto"
         onClose={() => {
           setIsEditFormOpen(false);
           setSelectedProduct(null);
         }}
         onSubmit={handleUpdateProduct}
-        initialData={selectedProduct || undefined}
-        title="Editar Producto"
-        submitText="Actualizar Producto"
-        isLoading={updateProductMutation.isPending}
       />
 
       <StockUpdateModal
+        isLoading={updateStockMutation.isPending}
         isOpen={isStockUpdateModalOpen}
+        product={productToUpdateStock}
         onClose={() => {
           setIsStockUpdateModalOpen(false);
           setProductToUpdateStock(null);
         }}
         onSubmit={handleUpdateStock}
-        product={productToUpdateStock}
-        isLoading={updateStockMutation.isPending}
       />
 
       <ConfirmModal
+        cancelText="Cancelar"
+        confirmText="Eliminar"
+        isLoading={deleteProductMutation.isPending}
         isOpen={isDeleteModalOpen}
+        message={`¿Estás seguro de que quieres eliminar el producto "${productToDelete?.name}"?\n\nEsta acción no se puede deshacer.`}
+        title="Eliminar Producto"
         onClose={() => {
           setIsDeleteModalOpen(false);
           setProductToDelete(null);
         }}
         onConfirm={handleDeleteProduct}
-        title="Eliminar Producto"
-        message={`¿Estás seguro de que quieres eliminar el producto "${productToDelete?.name}"?\n\nEsta acción no se puede deshacer.`}
-        confirmText="Eliminar"
-        cancelText="Cancelar"
-        isLoading={deleteProductMutation.isPending}
       />
     </DefaultLayout>
   );
-} 
+}

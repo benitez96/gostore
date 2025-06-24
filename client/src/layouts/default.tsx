@@ -1,4 +1,3 @@
-
 import { Navbar } from "@/components/navbar";
 
 export default function DefaultLayout({
@@ -12,7 +11,6 @@ export default function DefaultLayout({
       <main className="container mx-auto max-w-screen-lg flex-grow pb-6">
         {children}
       </main>
-
     </div>
   );
 }

@@ -1,14 +1,14 @@
-import axios from 'axios';
+import axios from "axios";
 
 // API Configuration
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080';
+const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8080";
 
 // Create axios instance
 export const api = axios.create({
   baseURL: API_BASE_URL,
   timeout: 10000,
   headers: {
-    'Content-Type': 'application/json',
+    "Content-Type": "application/json",
   },
 });
 
@@ -16,15 +16,17 @@ export const api = axios.create({
 api.interceptors.request.use(
   (config) => {
     // Add auth token if available
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem("token");
+
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
+
     return config;
   },
   (error) => {
     return Promise.reject(error);
-  }
+  },
 );
 
 // Response interceptor
@@ -36,11 +38,12 @@ api.interceptors.response.use(
     // Handle common errors
     if (error.response?.status === 401) {
       // Handle unauthorized
-      localStorage.removeItem('token');
-      window.location.href = '/login';
+      localStorage.removeItem("token");
+      window.location.href = "/login";
     }
+
     return Promise.reject(error);
-  }
+  },
 );
 
 // Client API functions
@@ -95,30 +98,40 @@ export const clientsApi = {
   // Get all clients with pagination and search
   getAll: async (params: ClientsParams = {}): Promise<ApiClientsResponse> => {
     const searchParams = new URLSearchParams();
-    
-    if (params.limit) searchParams.append('limit', params.limit.toString());
-    if (params.offset !== undefined) searchParams.append('offset', params.offset.toString());
-    if (params.search) searchParams.append('search', params.search);
-    
-    const response = await api.get(`/api/clients?${searchParams}`, { signal: params.signal });
+
+    if (params.limit) searchParams.append("limit", params.limit.toString());
+    if (params.offset !== undefined)
+      searchParams.append("offset", params.offset.toString());
+    if (params.search) searchParams.append("search", params.search);
+
+    const response = await api.get(`/api/clients?${searchParams}`, {
+      signal: params.signal,
+    });
+
     return response.data;
   },
 
   // Get client by ID
   getById: async (id: number): Promise<ClientDetail> => {
     const response = await api.get(`/api/clients/${id}`);
+
     return response.data;
   },
 
   // Create new client
-  create: async (client: Omit<ClientDetail, 'id'>): Promise<ClientDetail> => {
-    const response = await api.post('/api/clients', client);
+  create: async (client: Omit<ClientDetail, "id">): Promise<ClientDetail> => {
+    const response = await api.post("/api/clients", client);
+
     return response.data;
   },
 
   // Update client
-  update: async (id: number, client: Partial<ClientDetail>): Promise<ClientDetail> => {
+  update: async (
+    id: number,
+    client: Partial<ClientDetail>,
+  ): Promise<ClientDetail> => {
     const response = await api.put(`/api/clients/${id}`, client);
+
     return response.data;
   },
 
@@ -126,6 +139,21 @@ export const clientsApi = {
   delete: async (id: number): Promise<void> => {
     await api.delete(`/api/clients/${id}`);
   },
+};
+
+// Descargar ficha de venta en PDF
+export const downloadSaleSheet = async (saleId: number) => {
+  const response = await api.get(`/api/pdf/venta/${saleId}`, {
+    responseType: 'blob',
+  });
+  // Crear un enlace para descargar el archivo
+  const url = window.URL.createObjectURL(new Blob([response.data], { type: 'application/pdf' }));
+  const link = document.createElement('a');
+  link.href = url;
+  link.setAttribute('download', `venta_${saleId}.pdf`);
+  document.body.appendChild(link);
+  link.click();
+  link.parentNode?.removeChild(link);
 };
 
 // Export default api instance

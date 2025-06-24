@@ -59,6 +59,22 @@ func (tm *TemplateManager) GeneratePaymentReceiptHTML(data PaymentReceiptData) (
 	return tm.executeTemplate("payment_receipt", finalHTML, data)
 }
 
+// GenerateSaleSheetHTML genera el HTML para la ficha de venta
+func (tm *TemplateManager) GenerateSaleSheetHTML(data SaleSheetData) (string, error) {
+	htmlTemplate, err := tm.readTemplateFile("sale_sheet.html")
+	if err != nil {
+		return "", err
+	}
+
+	commonCSS, err := tm.readCSSFile("styles/common.css")
+	if err != nil {
+		return "", err
+	}
+
+	finalHTML := tm.embedCSSInHTML(htmlTemplate, commonCSS, []string{"styles/common.css"})
+	return tm.executeTemplate("sale_sheet", finalHTML, data)
+}
+
 // readTemplateFile lee un archivo de template HTML
 func (tm *TemplateManager) readTemplateFile(filename string) (string, error) {
 	if tm.useEmbed {

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardBody, CardHeader } from "@heroui/card";
 import { Chip } from "@heroui/chip";
@@ -7,26 +7,25 @@ import { Accordion, AccordionItem } from "@heroui/accordion";
 import { Divider } from "@heroui/divider";
 import { Progress } from "@heroui/progress";
 import { Button } from "@heroui/button";
-import DefaultLayout from "@/layouts/default";
-import DashboardCharts from "@/components/DashboardCharts";
-import { 
+import {
   RiDonutChartLine,
   RiUserLine,
   RiShoppingBagLine,
   RiMoneyDollarCircleLine,
-  RiRidingLine,
   RiCalendarLine,
   RiBarChartLine,
   RiPieChartLine,
-  RiInformationLine,
   RiAlertLine,
   RiCheckLine,
-  RiCloseLine,
   RiRefreshLine,
   RiArrowUpLine,
-  RiArrowDownLine
+  RiArrowDownLine,
 } from "react-icons/ri";
+
 import { api } from "../api";
+
+import DefaultLayout from "@/layouts/default";
+import DashboardCharts from "@/components/DashboardCharts";
 
 interface DashboardStats {
   totalClients: number;
@@ -60,48 +59,72 @@ interface QuotaData {
 
 export default function DashboardPage() {
   const [selectedPeriod, setSelectedPeriod] = useState("current");
-  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear().toString());
+  const [selectedYear, setSelectedYear] = useState(
+    new Date().getFullYear().toString(),
+  );
 
   // Query para obtener años disponibles
   const { data: availableYears, isLoading: yearsLoading } = useQuery({
     queryKey: ["available-years"],
     queryFn: async (): Promise<string[]> => {
       const response = await api.get("/api/charts/quotas/available-years");
+
       return response.data;
     },
   });
 
   // Query para obtener estadísticas básicas del dashboard
-  const { data: stats, isLoading: statsLoading, error: statsError, refetch: refetchStats } = useQuery({
+  const {
+    data: stats,
+    isLoading: statsLoading,
+    error: statsError,
+    refetch: refetchStats,
+  } = useQuery({
     queryKey: ["dashboard-stats", selectedPeriod],
     queryFn: async () => {
       const response = await api.get("/api/charts/dashboard-stats");
+
       return response.data;
     },
     refetchInterval: 30000, // Refrescar cada 30 segundos
   });
 
   // Query para obtener datos del gráfico de estado de clientes
-  const { data: clientStatusData, isLoading: clientStatusLoading, error: clientStatusError, refetch: refetchClientStatus } = useQuery({
+  const {
+    data: clientStatusData,
+    isLoading: clientStatusLoading,
+    error: clientStatusError,
+    refetch: refetchClientStatus,
+  } = useQuery({
     queryKey: ["client-status-count"],
     queryFn: async (): Promise<ClientStatusData[]> => {
       const response = await api.get("/api/charts/clients/status-count");
+
       return response.data;
     },
     refetchInterval: 30000,
   });
 
   // Query para obtener datos del gráfico de cuotas mensuales con año seleccionado
-  const { data: quotaData, isLoading: quotaLoading, error: quotaError, refetch: refetchQuota } = useQuery({
+  const {
+    data: quotaData,
+    isLoading: quotaLoading,
+    error: quotaError,
+    refetch: refetchQuota,
+  } = useQuery({
     queryKey: ["quota-monthly-summary", selectedYear],
     queryFn: async (): Promise<QuotaData[]> => {
-      const response = await api.get(`/api/charts/quotas/monthly-summary?year=${selectedYear}`);
+      const response = await api.get(
+        `/api/charts/quotas/monthly-summary?year=${selectedYear}`,
+      );
+
       return response.data;
     },
     refetchInterval: 30000,
   });
 
-  const isLoading = statsLoading || clientStatusLoading || quotaLoading || yearsLoading;
+  const isLoading =
+    statsLoading || clientStatusLoading || quotaLoading || yearsLoading;
   const error = statsError || clientStatusError || quotaError;
 
   const refetch = () => {
@@ -115,34 +138,51 @@ export default function DashboardPage() {
   };
 
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('es-AR', {
-      style: 'currency',
-      currency: 'ARS'
+    return new Intl.NumberFormat("es-AR", {
+      style: "currency",
+      currency: "ARS",
     }).format(amount);
   };
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('es-AR', {
-      month: 'long',
-      year: 'numeric'
+    // Si la fecha viene en formato YYYY-MM, agregar el día 01
+    const fullDateString = dateString.includes("-01")
+      ? dateString
+      : dateString + "-01";
+
+    // Crear la fecha usando UTC para evitar problemas de zona horaria
+    const [year, month] = fullDateString.split("-");
+    const date = new Date(parseInt(year), parseInt(month) - 1, 1);
+
+    return date.toLocaleDateString("es-AR", {
+      month: "long",
+      year: "numeric",
     });
   };
 
   const getStatusColor = (statusName: string) => {
     switch (statusName.toLowerCase()) {
-      case 'ok': return 'success';
-      case 'warning': return 'warning';
-      case 'suspended': return 'danger';
-      default: return 'default';
+      case "ok":
+        return "success";
+      case "warning":
+        return "warning";
+      case "suspended":
+        return "danger";
+      default:
+        return "default";
     }
   };
 
   const getStatusText = (statusName: string) => {
     switch (statusName.toLowerCase()) {
-      case 'ok': return 'Al día';
-      case 'warning': return 'Advertencia';
-      case 'suspended': return 'Suspendido';
-      default: return statusName;
+      case "ok":
+        return "Al día";
+      case "warning":
+        return "Advertencia";
+      case "suspended":
+        return "Suspendido";
+      default:
+        return statusName;
     }
   };
 
@@ -152,6 +192,7 @@ export default function DashboardPage() {
     } else if (current < previous) {
       return <RiArrowDownLine className="text-danger" />;
     }
+
     return null;
   };
 
@@ -193,11 +234,11 @@ export default function DashboardPage() {
             </div>
           </div>
           <Button
-            color="primary"
-            variant="flat"
-            startContent={<RiRefreshLine />}
-            onPress={() => refetch()}
             className="font-medium"
+            color="primary"
+            startContent={<RiRefreshLine />}
+            variant="flat"
+            onPress={() => refetch()}
           >
             Actualizar
           </Button>
@@ -213,8 +254,12 @@ export default function DashboardPage() {
                   <div className="p-2 bg-primary/10 rounded-full mb-2">
                     <RiUserLine className="text-primary text-xl" />
                   </div>
-                  <p className="text-sm text-default-600 font-medium">Total Clientes</p>
-                  <p className="text-2xl font-bold text-primary">{stats?.totalClients || 0}</p>
+                  <p className="text-sm text-default-600 font-medium">
+                    Total Clientes
+                  </p>
+                  <p className="text-2xl font-bold text-primary">
+                    {stats?.totalClients || 0}
+                  </p>
                   <span className="text-xs text-default-500">Registrados</span>
                 </div>
               </CardBody>
@@ -227,8 +272,12 @@ export default function DashboardPage() {
                   <div className="p-2 bg-success/10 rounded-full mb-2">
                     <RiShoppingBagLine className="text-success text-xl" />
                   </div>
-                  <p className="text-sm text-default-600 font-medium">Total Productos</p>
-                  <p className="text-2xl font-bold text-success">{stats?.totalProducts || 0}</p>
+                  <p className="text-sm text-default-600 font-medium">
+                    Total Productos
+                  </p>
+                  <p className="text-2xl font-bold text-success">
+                    {stats?.totalProducts || 0}
+                  </p>
                   <span className="text-xs text-default-500">En catálogo</span>
                 </div>
               </CardBody>
@@ -242,10 +291,16 @@ export default function DashboardPage() {
                     <div className="p-2 bg-warning/10 rounded-full mb-2">
                       <RiBarChartLine className="text-warning text-xl" />
                     </div>
-                    <p className="text-sm text-default-600 font-medium">Total Ventas</p>
+                    <p className="text-sm text-default-600 font-medium">
+                      Total Ventas
+                    </p>
                   </div>
-                  <p className="text-2xl font-bold text-warning">{stats?.totalSales || 0}</p>
-                  <span className="text-xs text-default-500">{stats?.activeSales || 0} activas</span>
+                  <p className="text-2xl font-bold text-warning">
+                    {stats?.totalSales || 0}
+                  </p>
+                  <span className="text-xs text-default-500">
+                    {stats?.activeSales || 0} activas
+                  </span>
                 </div>
               </CardBody>
             </Card>
@@ -255,11 +310,17 @@ export default function DashboardPage() {
               <CardBody className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm text-default-600 font-medium">Cobrado este mes</p>
-                    <p className="text-3xl font-bold text-success mt-1 text-balance">{formatCurrency(stats?.collectedThisMonth || 0)}</p>
+                    <p className="text-sm text-default-600 font-medium">
+                      Cobrado este mes
+                    </p>
+                    <p className="text-3xl font-bold text-success mt-1 text-balance">
+                      {formatCurrency(stats?.collectedThisMonth || 0)}
+                    </p>
                     <div className="flex items-center gap-1 mt-2">
                       <RiMoneyDollarCircleLine className="text-success text-sm" />
-                      <span className="text-xs text-default-500">Pagos recibidos</span>
+                      <span className="text-xs text-default-500">
+                        Pagos recibidos
+                      </span>
                     </div>
                   </div>
                   <div className="p-3 bg-success/10 rounded-full">
@@ -275,26 +336,36 @@ export default function DashboardPage() {
                 <div className="p-2 bg-success/10 rounded-full mb-2">
                   <RiCheckLine className="text-success text-2xl" />
                 </div>
-                <p className="text-sm text-default-600 font-medium">Cuotas cobradas</p>
+                <p className="text-sm text-default-600 font-medium">
+                  Cuotas cobradas
+                </p>
                 <p className="text-2xl font-bold text-success">
                   {stats?.paidQuotasDueThisMonth || 0}
-                  <span className="text-default-500"> / {stats?.countQuotasDueThisMonth || 0}</span>
+                  <span className="text-default-500">
+                    {" "}
+                    / {stats?.countQuotasDueThisMonth || 0}
+                  </span>
                 </p>
                 <span className="text-xs text-default-500 mt-1">Este mes</span>
               </CardBody>
             </Card>
-
 
             {/* Pendiente por Cobrar - 2 columnas, 2 filas */}
             <Card className="lg:col-span-2 bg-gradient-to-br from-danger-50 to-danger-100 dark:from-danger-900/20 dark:to-danger-800/20 border-0 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
               <CardBody className="p-6 h-full flex flex-col justify-center">
                 <div className="flex items-center justify-between">
                   <div className="flex-1">
-                    <p className="text-lg text-default-600 font-medium">Pendiente por Cobrar</p>
-                    <p className="text-3xl font-bold text-danger mt-2 text-balance">{formatCurrency(stats?.pendingAmount || 0)}</p>
+                    <p className="text-lg text-default-600 font-medium">
+                      Pendiente por Cobrar
+                    </p>
+                    <p className="text-3xl font-bold text-danger mt-2 text-balance">
+                      {formatCurrency(stats?.pendingAmount || 0)}
+                    </p>
                     <div className="flex items-center gap-2 mt-4">
                       <RiMoneyDollarCircleLine className="text-danger text-lg" />
-                      <span className="text-sm text-default-500">Cuotas vencidas</span>
+                      <span className="text-sm text-default-500">
+                        Cuotas vencidas
+                      </span>
                     </div>
                   </div>
                   <div className="p-4 bg-danger/10 rounded-full">
@@ -310,12 +381,19 @@ export default function DashboardPage() {
                 <div className="p-2 bg-info/10 rounded-full mb-2">
                   <RiCheckLine className="text-info text-2xl" />
                 </div>
-                <p className="text-sm text-default-600 font-medium">Cuotas cobradas</p>
+                <p className="text-sm text-default-600 font-medium">
+                  Cuotas cobradas
+                </p>
                 <p className="text-2xl font-bold text-info">
                   {stats?.paidQuotasDueLastMonth || 0}
-                  <span className="text-default-500"> / {stats?.countQuotasDueLastMonth || 0}</span>
+                  <span className="text-default-500">
+                    {" "}
+                    / {stats?.countQuotasDueLastMonth || 0}
+                  </span>
                 </p>
-                <span className="text-xs text-default-500 mt-1">Mes anterior</span>
+                <span className="text-xs text-default-500 mt-1">
+                  Mes anterior
+                </span>
               </CardBody>
             </Card>
 
@@ -324,11 +402,19 @@ export default function DashboardPage() {
               <CardBody className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm text-default-600 font-medium">Cobrado de cuotas que vencen este mes</p>
-                    <p className="text-3xl font-bold text-secondary mt-1 text-balance">{formatCurrency(stats?.collectedFromQuotasDueThisMonth || 0)}</p>
+                    <p className="text-sm text-default-600 font-medium">
+                      Cobrado de cuotas que vencen este mes
+                    </p>
+                    <p className="text-3xl font-bold text-secondary mt-1 text-balance">
+                      {formatCurrency(
+                        stats?.collectedFromQuotasDueThisMonth || 0,
+                      )}
+                    </p>
                     <div className="flex items-center gap-1 mt-2">
                       <RiCheckLine className="text-secondary text-sm" />
-                      <span className="text-xs text-default-500">Pagos sobre cuotas de este mes</span>
+                      <span className="text-xs text-default-500">
+                        Pagos sobre cuotas de este mes
+                      </span>
                     </div>
                   </div>
                   <div className="p-3 bg-secondary/10 rounded-full">
@@ -343,11 +429,17 @@ export default function DashboardPage() {
               <CardBody className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm text-default-600 font-medium">Cuotas con vencimiento este mes</p>
-                    <p className="text-3xl font-bold text-primary mt-1 text-balance">{formatCurrency(stats?.quotasDueThisMonth || 0)}</p>
+                    <p className="text-sm text-default-600 font-medium">
+                      Cuotas con vencimiento este mes
+                    </p>
+                    <p className="text-3xl font-bold text-primary mt-1 text-balance">
+                      {formatCurrency(stats?.quotasDueThisMonth || 0)}
+                    </p>
                     <div className="flex items-center gap-1 mt-2">
                       <RiCalendarLine className="text-primary text-sm" />
-                      <span className="text-xs text-default-500">Total cuotas</span>
+                      <span className="text-xs text-default-500">
+                        Total cuotas
+                      </span>
                     </div>
                   </div>
                   <div className="p-3 bg-primary/10 rounded-full">
@@ -361,11 +453,17 @@ export default function DashboardPage() {
               <CardBody className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm text-default-600 font-medium">Cuotas con venc. próximo mes</p>
-                    <p className="text-3xl font-bold text-info mt-1 text-balance">{formatCurrency(stats?.quotasDueNextMonth || 0)}</p>
+                    <p className="text-sm text-default-600 font-medium">
+                      Cuotas con venc. próximo mes
+                    </p>
+                    <p className="text-3xl font-bold text-info mt-1 text-balance">
+                      {formatCurrency(stats?.quotasDueNextMonth || 0)}
+                    </p>
                     <div className="flex items-center gap-1 mt-2">
                       <RiCalendarLine className="text-info text-sm" />
-                      <span className="text-xs text-default-500">Próximo mes</span>
+                      <span className="text-xs text-default-500">
+                        Próximo mes
+                      </span>
                     </div>
                   </div>
                   <div className="p-3 bg-info/10 rounded-full">
@@ -380,11 +478,17 @@ export default function DashboardPage() {
               <CardBody className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm text-default-600 font-medium">Ingresos Totales</p>
-                    <p className="text-3xl font-bold text-warning mt-1 text-balance">{formatCurrency(stats?.totalRevenue || 0)}</p>
+                    <p className="text-sm text-default-600 font-medium">
+                      Ingresos Totales
+                    </p>
+                    <p className="text-3xl font-bold text-warning mt-1 text-balance">
+                      {formatCurrency(stats?.totalRevenue || 0)}
+                    </p>
                     <div className="flex items-center gap-1 mt-2">
                       <RiMoneyDollarCircleLine className="text-warning text-sm" />
-                      <span className="text-xs text-default-500">Acumulados</span>
+                      <span className="text-xs text-default-500">
+                        Acumulados
+                      </span>
                     </div>
                   </div>
                   <div className="p-3 bg-warning/10 rounded-full">
@@ -393,7 +497,6 @@ export default function DashboardPage() {
                 </div>
               </CardBody>
             </Card>
-
           </div>
 
           {/* Gráficos principales */}
@@ -405,10 +508,10 @@ export default function DashboardPage() {
                   Análisis Visual
                 </h2>
               </div>
-              <DashboardCharts 
+              <DashboardCharts
+                availableYears={availableYears}
                 clientStatusData={clientStatusData}
                 quotaData={quotaData}
-                availableYears={availableYears}
                 selectedYear={selectedYear}
                 onYearChange={handleYearChange}
               />
@@ -416,12 +519,12 @@ export default function DashboardPage() {
           )}
 
           {/* Accordion con estadísticas detalladas */}
-          <Accordion 
-            variant="splitted" 
+          <Accordion
             className="gap-4"
             itemClasses={{
-              content: "px-0"
+              content: "px-0",
             }}
+            variant="splitted"
           >
             {/* Estado de clientes */}
             <AccordionItem
@@ -436,30 +539,42 @@ export default function DashboardPage() {
             >
               <div className="p-4">
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  {clientStatusData && clientStatusData.map((status: ClientStatusData) => (
-                    <Card key={status.status_id} className="border-l-4 border-l-primary hover:shadow-md transition-shadow">
-                      <CardBody className="p-4">
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <p className="text-sm text-default-600">{getStatusText(status.status_name)}</p>
-                            <p className="text-2xl font-bold">{status.client_count}</p>
+                  {clientStatusData &&
+                    clientStatusData.map((status: ClientStatusData) => (
+                      <Card
+                        key={status.status_id}
+                        className="border-l-4 border-l-primary hover:shadow-md transition-shadow"
+                      >
+                        <CardBody className="p-4">
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <p className="text-sm text-default-600">
+                                {getStatusText(status.status_name)}
+                              </p>
+                              <p className="text-2xl font-bold">
+                                {status.client_count}
+                              </p>
+                            </div>
+                            <Chip
+                              color={getStatusColor(status.status_name) as any}
+                              size="sm"
+                              variant="flat"
+                            >
+                              {getStatusText(status.status_name)}
+                            </Chip>
                           </div>
-                          <Chip 
+                          <Progress
+                            className="mt-2"
                             color={getStatusColor(status.status_name) as any}
-                            variant="flat"
-                            size="sm"
-                          >
-                            {getStatusText(status.status_name)}
-                          </Chip>
-                        </div>
-                        <Progress 
-                          value={(status.client_count / (stats?.totalClients || 1)) * 100} 
-                          color={getStatusColor(status.status_name) as any}
-                          className="mt-2"
-                        />
-                      </CardBody>
-                    </Card>
-                  ))}
+                            value={
+                              (status.client_count /
+                                (stats?.totalClients || 1)) *
+                              100
+                            }
+                          />
+                        </CardBody>
+                      </Card>
+                    ))}
                 </div>
               </div>
             </AccordionItem>
@@ -471,7 +586,10 @@ export default function DashboardPage() {
               title={
                 <div className="flex items-center gap-2">
                   <RiCalendarLine className="text-success" />
-                  <span>Resumen Mensual de Cuotas {selectedYear && `(${selectedYear})`}</span>
+                  <span>
+                    Resumen Mensual de Cuotas{" "}
+                    {selectedYear && `(${selectedYear})`}
+                  </span>
                 </div>
               }
             >
@@ -479,56 +597,101 @@ export default function DashboardPage() {
                 {quotaData && quotaData.length > 0 ? (
                   <div className="space-y-4">
                     {quotaData.map((month: QuotaData, index: number) => (
-                      <Card key={index} className="border border-default-200 hover:shadow-md transition-shadow">
+                      <Card
+                        key={index}
+                        className="border border-default-200 hover:shadow-md transition-shadow"
+                      >
                         <CardHeader className="pb-2">
-                          <h4 className="font-medium">{formatDate(month.month + '-01')}</h4>
+                          <h4 className="font-medium">
+                            {formatDate(month.month + "-01")}
+                          </h4>
                         </CardHeader>
                         <CardBody className="pt-0">
                           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                             <div className="text-center">
-                              <p className="text-sm text-default-600">Monto Total</p>
-                              <p className="text-xl font-bold">{formatCurrency(month.total_amount)}</p>
+                              <p className="text-sm text-default-600">
+                                Monto Total
+                              </p>
+                              <p className="text-xl font-bold">
+                                {formatCurrency(month.total_amount)}
+                              </p>
                             </div>
                             <div className="text-center">
                               <p className="text-sm text-default-600">Pagado</p>
-                              <p className="text-xl font-bold text-success">{formatCurrency(month.amount_paid)}</p>
+                              <p className="text-xl font-bold text-success">
+                                {formatCurrency(month.amount_paid)}
+                              </p>
                             </div>
                             <div className="text-center">
-                              <p className="text-sm text-default-600">Pendiente</p>
-                              <p className="text-xl font-bold text-warning">{formatCurrency(month.amount_not_paid)}</p>
+                              <p className="text-sm text-default-600">
+                                Pendiente
+                              </p>
+                              <p className="text-xl font-bold text-warning">
+                                {formatCurrency(month.amount_not_paid)}
+                              </p>
                             </div>
                             <div className="text-center">
-                              <p className="text-sm text-default-600">Porcentaje Pagado</p>
+                              <p className="text-sm text-default-600">
+                                Porcentaje Pagado
+                              </p>
                               <p className="text-xl font-bold">
-                                {((month.amount_paid / (month.total_amount || 1)) * 100).toFixed(1)}%
+                                {(
+                                  (month.amount_paid /
+                                    (month.total_amount || 1)) *
+                                  100
+                                ).toFixed(1)}
+                                %
                               </p>
                             </div>
                           </div>
 
                           <Divider className="my-4" />
-                          
+
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
-                              <p className="text-sm text-default-600 mb-2">Progreso de pagos</p>
-                              <Progress 
-                                value={(month.amount_paid / (month.total_amount || 1)) * 100} 
-                                color="success"
+                              <p className="text-sm text-default-600 mb-2">
+                                Progreso de pagos
+                              </p>
+                              <Progress
                                 className="mb-2"
+                                color="success"
+                                value={
+                                  (month.amount_paid /
+                                    (month.total_amount || 1)) *
+                                  100
+                                }
                               />
                               <div className="flex justify-between text-sm">
-                                <span>Pagado: {formatCurrency(month.amount_paid)}</span>
-                                <span>Pendiente: {formatCurrency(month.amount_not_paid)}</span>
+                                <span>
+                                  Pagado: {formatCurrency(month.amount_paid)}
+                                </span>
+                                <span>
+                                  Pendiente:{" "}
+                                  {formatCurrency(month.amount_not_paid)}
+                                </span>
                               </div>
                             </div>
                             <div className="flex items-center justify-center">
                               <div className="text-center">
-                                <p className="text-sm text-default-600">Estado del mes</p>
-                                <Chip 
-                                  color={month.amount_not_paid === 0 ? "success" : month.amount_paid === 0 ? "danger" : "warning"}
-                                  variant="flat"
+                                <p className="text-sm text-default-600">
+                                  Estado del mes
+                                </p>
+                                <Chip
+                                  color={
+                                    month.amount_not_paid === 0
+                                      ? "success"
+                                      : month.amount_paid === 0
+                                        ? "danger"
+                                        : "warning"
+                                  }
                                   size="sm"
+                                  variant="flat"
                                 >
-                                  {month.amount_not_paid === 0 ? "Completado" : month.amount_paid === 0 ? "Pendiente" : "Parcial"}
+                                  {month.amount_not_paid === 0
+                                    ? "Completado"
+                                    : month.amount_paid === 0
+                                      ? "Pendiente"
+                                      : "Parcial"}
                                 </Chip>
                               </div>
                             </div>
@@ -540,7 +703,9 @@ export default function DashboardPage() {
                 ) : (
                   <div className="text-center py-8">
                     <RiCalendarLine className="text-4xl mx-auto mb-2 text-default-400" />
-                    <p className="text-default-500">No hay datos de cuotas disponibles</p>
+                    <p className="text-default-500">
+                      No hay datos de cuotas disponibles
+                    </p>
                   </div>
                 )}
               </div>
@@ -550,4 +715,4 @@ export default function DashboardPage() {
       </section>
     </DefaultLayout>
   );
-} 
+}

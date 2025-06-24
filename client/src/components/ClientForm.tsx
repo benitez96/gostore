@@ -1,14 +1,20 @@
 import { useState, useEffect } from "react";
-import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter } from "@heroui/modal";
+import {
+  Modal,
+  ModalContent,
+  ModalHeader,
+  ModalBody,
+  ModalFooter,
+} from "@heroui/modal";
 import { Button } from "@heroui/button";
 import { Input } from "@heroui/input";
-import { RiCloseLine } from "react-icons/ri";
+
 import { ClientDetail } from "@/api";
 
 interface ClientFormProps {
   isOpen: boolean;
   onClose: () => void;
-  onSubmit: (client: Omit<ClientDetail, 'id'>) => Promise<void>;
+  onSubmit: (client: Omit<ClientDetail, "id">) => Promise<void>;
   initialData?: Partial<ClientDetail>;
   title: JSX.Element | string;
   submitText: string;
@@ -24,7 +30,7 @@ export default function ClientForm({
   submitText,
   isLoading = false,
 }: ClientFormProps) {
-  const [formData, setFormData] = useState<Omit<ClientDetail, 'id'>>({
+  const [formData, setFormData] = useState<Omit<ClientDetail, "id">>({
     name: "",
     lastname: "",
     dni: "",
@@ -40,7 +46,7 @@ export default function ClientForm({
   // Initialize form with initial data
   useEffect(() => {
     if (initialData) {
-      setFormData(prev => ({
+      setFormData((prev) => ({
         ...prev,
         ...initialData,
       }));
@@ -87,12 +93,13 @@ export default function ClientForm({
     }
 
     setErrors(newErrors);
+
     return Object.keys(newErrors).length === 0;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!validateForm()) {
       return;
     }
@@ -117,86 +124,85 @@ export default function ClientForm({
     }
   };
 
-  const handleInputChange = (field: keyof Omit<ClientDetail, 'id'>) => (
-    e: React.ChangeEvent<HTMLInputElement>
-  ) => {
-    const value = e.target.value;
-    setFormData(prev => ({ ...prev, [field]: value }));
-    
-    // Clear error when user starts typing
-    if (errors[field]) {
-      setErrors(prev => ({ ...prev, [field]: "" }));
-    }
-  };
+  const handleInputChange =
+    (field: keyof Omit<ClientDetail, "id">) =>
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const value = e.target.value;
+
+      setFormData((prev) => ({ ...prev, [field]: value }));
+
+      // Clear error when user starts typing
+      if (errors[field]) {
+        setErrors((prev) => ({ ...prev, [field]: "" }));
+      }
+    };
 
   if (!isOpen) return null;
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} size="2xl" scrollBehavior="inside">
+    <Modal isOpen={isOpen} scrollBehavior="inside" size="2xl" onClose={onClose}>
       <ModalContent>
         <ModalHeader className="flex flex-col gap-1">
-          <div className="flex items-center gap-2">
-            {title}
-          </div>
+          <div className="flex items-center gap-2">{title}</div>
           <p className="text-sm text-default-500">
             Complete la información del cliente
           </p>
         </ModalHeader>
         <ModalBody>
-          <form id="client-form" onSubmit={handleSubmit} className="space-y-4">
+          <form className="space-y-4" id="client-form" onSubmit={handleSubmit}>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {/* Nombre */}
               <Input
+                isRequired
+                errorMessage={errors.name}
+                isInvalid={!!errors.name}
                 label="Nombre"
                 placeholder="Ingrese el nombre"
                 value={formData.name}
-                onChange={handleInputChange('name')}
-                isInvalid={!!errors.name}
-                errorMessage={errors.name}
-                isRequired
+                onChange={handleInputChange("name")}
               />
 
               {/* Apellido */}
               <Input
+                isRequired
+                errorMessage={errors.lastname}
+                isInvalid={!!errors.lastname}
                 label="Apellido"
                 placeholder="Ingrese el apellido"
                 value={formData.lastname}
-                onChange={handleInputChange('lastname')}
-                isInvalid={!!errors.lastname}
-                errorMessage={errors.lastname}
-                isRequired
+                onChange={handleInputChange("lastname")}
               />
 
               {/* DNI */}
               <Input
+                isRequired
+                errorMessage={errors.dni}
+                isInvalid={!!errors.dni}
                 label="DNI"
                 placeholder="Ingrese el DNI"
                 value={formData.dni}
-                onChange={handleInputChange('dni')}
-                isInvalid={!!errors.dni}
-                errorMessage={errors.dni}
-                isRequired
+                onChange={handleInputChange("dni")}
               />
 
               {/* Email */}
               <Input
+                errorMessage={errors.email}
+                isInvalid={!!errors.email}
                 label="Email"
                 placeholder="Ingrese el email"
                 type="email"
                 value={formData.email}
-                onChange={handleInputChange('email')}
-                isInvalid={!!errors.email}
-                errorMessage={errors.email}
+                onChange={handleInputChange("email")}
               />
 
               {/* Teléfono */}
               <Input
+                errorMessage={errors.phone}
+                isInvalid={!!errors.phone}
                 label="Teléfono"
                 placeholder="Ingrese el teléfono"
                 value={formData.phone}
-                onChange={handleInputChange('phone')}
-                isInvalid={!!errors.phone}
-                errorMessage={errors.phone}
+                onChange={handleInputChange("phone")}
               />
 
               {/* Dirección */}
@@ -205,7 +211,7 @@ export default function ClientForm({
                   label="Dirección"
                   placeholder="Ingrese la dirección completa"
                   value={formData.address}
-                  onChange={handleInputChange('address')}
+                  onChange={handleInputChange("address")}
                 />
               </div>
             </div>
@@ -215,11 +221,11 @@ export default function ClientForm({
           <Button color="default" variant="light" onPress={onClose}>
             Cancelar
           </Button>
-          <Button 
-            color="primary" 
-            type="submit" 
+          <Button
+            color="primary"
             form="client-form"
             isLoading={isLoading}
+            type="submit"
           >
             {submitText}
           </Button>
@@ -227,4 +233,4 @@ export default function ClientForm({
       </ModalContent>
     </Modal>
   );
-} 
+}

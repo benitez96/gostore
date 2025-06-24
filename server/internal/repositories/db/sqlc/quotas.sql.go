@@ -71,7 +71,7 @@ func (q *Queries) GetClientsBySaleStates(ctx context.Context) ([]GetClientsBySal
 }
 
 const getQuotaByID = `-- name: GetQuotaByID :one
-SELECT id, number, amount, due_date, is_paid, state_id, sale_id, client_id, created_at, updated_at, "foreign" FROM quotas WHERE id = ?
+SELECT id, number, amount, due_date, is_paid, state_id, sale_id, client_id, created_at, updated_at FROM quotas WHERE id = ?
 `
 
 func (q *Queries) GetQuotaByID(ctx context.Context, id int64) (Quota, error) {
@@ -88,13 +88,12 @@ func (q *Queries) GetQuotaByID(ctx context.Context, id int64) (Quota, error) {
 		&i.ClientID,
 		&i.CreatedAt,
 		&i.UpdatedAt,
-		&i.Foreign,
 	)
 	return i, err
 }
 
 const getSaleQuotas = `-- name: GetSaleQuotas :many
-SELECT id, number, amount, due_date, is_paid, state_id, sale_id, client_id, created_at, updated_at, "foreign" FROM quotas WHERE sale_id = ?
+SELECT id, number, amount, due_date, is_paid, state_id, sale_id, client_id, created_at, updated_at FROM quotas WHERE sale_id = ?
 `
 
 func (q *Queries) GetSaleQuotas(ctx context.Context, saleID int64) ([]Quota, error) {
@@ -117,7 +116,6 @@ func (q *Queries) GetSaleQuotas(ctx context.Context, saleID int64) ([]Quota, err
 			&i.ClientID,
 			&i.CreatedAt,
 			&i.UpdatedAt,
-			&i.Foreign,
 		); err != nil {
 			return nil, err
 		}

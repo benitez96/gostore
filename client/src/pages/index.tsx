@@ -1,14 +1,20 @@
 import { Button } from "@heroui/button";
 import { Link } from "@heroui/link";
-import { title, subtitle } from "@/components/primitives";
+import {
+  RiDonutChartLine,
+  RiUserLine,
+  RiShoppingBagLine,
+  RiHomeLine,
+} from "react-icons/ri";
+
 import DefaultLayout from "@/layouts/default";
-import { RiDonutChartLine, RiUserLine, RiShoppingBagLine, RiHomeLine } from "react-icons/ri";
 
 export default function IndexPage() {
   const cards = [
     {
       title: "Clientes",
-      description: "Gestiona tu base de datos de clientes, contactos y información",
+      description:
+        "Gestiona tu base de datos de clientes, contactos y información",
       href: "/clientes",
       color: "secondary" as const,
       icon: RiUserLine,
@@ -22,7 +28,8 @@ export default function IndexPage() {
     },
     {
       title: "Dashboard",
-      description: "Vista general de tu negocio con estadísticas y métricas importantes",
+      description:
+        "Vista general de tu negocio con estadísticas y métricas importantes",
       href: "/dashboard",
       color: "primary" as const,
       icon: RiDonutChartLine,
@@ -51,22 +58,30 @@ export default function IndexPage() {
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 max-w-4xl w-full px-4">
             {cards.map((card) => {
               const IconComponent = card.icon;
+
               return (
-                <div key={card.href} className="bg-content1 border border-default-200 rounded-lg p-6 shadow-sm hover:shadow-md transition-shadow">
+                <div
+                  key={card.href}
+                  className="bg-content1 border border-default-200 rounded-lg p-6 shadow-sm hover:shadow-md transition-shadow"
+                >
                   <div className="mb-4 flex items-center gap-3">
                     <IconComponent className="text-2xl text-primary" />
-                    <h3 className="text-lg font-semibold text-foreground">{card.title}</h3>
+                    <h3 className="text-lg font-semibold text-foreground">
+                      {card.title}
+                    </h3>
                   </div>
                   <div className="mb-6">
-                    <p className="text-sm text-default-500">{card.description}</p>
+                    <p className="text-sm text-default-500">
+                      {card.description}
+                    </p>
                   </div>
                   <div>
                     <Button
                       as={Link}
-                      href={card.href}
-                      color={card.color}
-                      variant="flat"
                       className="w-full"
+                      color={card.color}
+                      href={card.href}
+                      variant="flat"
                     >
                       Ir a {card.title}
                     </Button>

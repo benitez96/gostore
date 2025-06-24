@@ -106,6 +106,104 @@ func (q *Queries) GetProductByID(ctx context.Context, id int64) (Product, error)
 	return i, err
 }
 
+const getProductStats = `-- name: GetProductStats :one
+SELECT 
+    COUNT(*) as total_products,
+    IFNULL(SUM(price * stock), 0) as total_value,
+    IFNULL(SUM(cost * stock), 0) as total_cost,
+    IFNULL(SUM(stock), 0) as total_stock,
+    COUNT(CASE WHEN stock = 0 THEN 1 END) as out_of_stock_count
+FROM products
+`
+
+type GetProductStatsRow struct {
+	TotalProducts   int64
+	TotalValue      interface{}
+	TotalCost       interface{}
+	TotalStock      interface{}
+	OutOfStockCount int64
+}
+
+func (q *Queries) GetProductStats(ctx context.Context) (GetProductStatsRow, error) {
+	row := q.db.QueryRowContext(ctx, getProductStats)
+	var i GetProductStatsRow
+	err := row.Scan(
+		&i.TotalProducts,
+		&i.TotalValue,
+		&i.TotalCost,
+		&i.TotalStock,
+		&i.OutOfStockCount,
+	)
+	return i, err
+}
+
+const getProductsCount = `-- name: GetProductsCount :one
+SELECT COUNT(*) FROM products 
+WHERE (? = '' OR name LIKE '%' || ? || '%')
+`
+
+type GetProductsCountParams struct {
+	Column1 interface{}
+	Column2 sql.NullString
+}
+
+func (q *Queries) GetProductsCount(ctx context.Context, arg GetProductsCountParams) (int64, error) {
+	row := q.db.QueryRowContext(ctx, getProductsCount, arg.Column1, arg.Column2)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
+const getProductsPaginated = `-- name: GetProductsPaginated :many
+SELECT id, name, cost, price, stock, created_at, updated_at FROM products 
+WHERE (? = '' OR name LIKE '%' || ? || '%')
+ORDER BY created_at DESC
+LIMIT ? OFFSET ?
+`
+
+type GetProductsPaginatedParams struct {
+	Column1 interface{}
+	Column2 sql.NullString
+	Limit   int64
+	Offset  int64
+}
+
+func (q *Queries) GetProductsPaginated(ctx context.Context, arg GetProductsPaginatedParams) ([]Product, error) {
+	rows, err := q.db.QueryContext(ctx, getProductsPaginated,
+		arg.Column1,
+		arg.Column2,
+		arg.Limit,
+		arg.Offset,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Product
+	for rows.Next() {
+		var i Product
+		if err := rows.Scan(
+			&i.ID,
+			&i.Name,
+			&i.Cost,
+			&i.Price,
+			&i.Stock,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const updateProduct = `-- name: UpdateProduct :one
 UPDATE products
 SET name = ?, cost = ?, price = ?, stock = ?, updated_at = CURRENT_TIMESTAMP

@@ -108,6 +108,11 @@ func (s *Service) GenerateDuplicate(paymentID string) ([]byte, error) {
 	return s.generator.GenerateDuplicate(paymentID)
 }
 
+// GenerateSaleSheetPDF genera la ficha de venta en PDF a partir del ID de la venta
+func (s *Service) GenerateSaleSheetPDF(saleID int) ([]byte, error) {
+	return s.generator.GenerateSaleSheetPDF(saleID, s.saleService, s.clientService)
+}
+
 // TODO: Agregar métodos para otros tipos de reportes
 // - GenerateSalesReport
 // - GenerateClientReport

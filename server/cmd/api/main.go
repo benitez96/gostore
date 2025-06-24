@@ -226,6 +226,7 @@ func main() {
 	// product routes
 	router.POST("/api/products", productHandler.CreateProduct)
 	router.GET("/api/products", productHandler.GetAllProducts)
+	router.GET("/api/products-stats", productHandler.GetProductStats)
 	router.GET("/api/products/:id", productHandler.GetProductByID)
 	router.PUT("/api/products/:id", productHandler.UpdateProduct)
 	router.DELETE("/api/products/:id", productHandler.DeleteProduct)
@@ -242,6 +243,7 @@ func main() {
 
 	// pdf routes
 	router.POST("/api/pdf/generate-receipt", pdfHandler.GeneratePaymentReceipt)
+	router.GET("/api/pdf/venta/:id", pdfHandler.GenerateSaleSheet)
 
 	// quota routes
 	router.PUT("/api/quotas/:id", quotaHandler.UpdateQuota)
