@@ -141,6 +141,29 @@ export const clientsApi = {
   },
 };
 
+// Notes API functions
+export interface Note {
+  id: any;
+  content: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export const notesApi = {
+  // Create a new note for a sale
+  create: async (saleId: string, content: string): Promise<Note> => {
+    const response = await api.post(`/api/sales/${saleId}/notes`, {
+      content,
+    });
+    return response.data;
+  },
+
+  // Delete a note by ID
+  delete: async (noteId: string): Promise<void> => {
+    await api.delete(`/api/notes/${noteId}`);
+  },
+};
+
 // Descargar ficha de venta en PDF
 export const downloadSaleSheet = async (saleId: number) => {
   const response = await api.get(`/api/pdf/venta/${saleId}`, {

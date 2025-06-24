@@ -33,6 +33,7 @@ export interface SaleSummary {
   date?: string;
   quotas?: QuotaDetail[];
   products?: SaleProduct[];
+  notes?: NoteDetail[];
 }
 
 export interface SaleProduct {
@@ -57,6 +58,13 @@ export interface PaymentDetail {
   id: string;
   amount: number;
   date?: string;
+}
+
+export interface NoteDetail {
+  id: any;
+  content: string;
+  created_at?: string;
+  updated_at?: string;
 }
 
 export interface Paginated<T> {

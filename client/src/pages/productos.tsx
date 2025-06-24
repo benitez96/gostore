@@ -965,9 +965,28 @@ export default function ProductosPage() {
       <ConfirmModal
         cancelText="Cancelar"
         confirmText="Eliminar"
+        entityInfo={
+          productToDelete
+            ? {
+                "Nombre del producto": productToDelete.name,
+                "ID del producto": `#${productToDelete.id}`,
+                Costo: formatCurrency(productToDelete.cost),
+                Precio: formatCurrency(productToDelete.price),
+                "Stock actual": `${productToDelete.stock} unidades`,
+                "Última actualización": formatDate(productToDelete.updated_at),
+              }
+            : undefined
+        }
+        impactList={[
+          "Se eliminará toda la información del producto",
+          "Se eliminará del inventario permanentemente",
+          "Se eliminará el historial de este producto",
+          "No se podrá recuperar la información",
+        ]}
+        isDangerous={true}
         isLoading={deleteProductMutation.isPending}
         isOpen={isDeleteModalOpen}
-        message={`¿Estás seguro de que quieres eliminar el producto "${productToDelete?.name}"?\n\nEsta acción no se puede deshacer.`}
+        message="¿Estás seguro de que quieres eliminar este producto? Esta acción no se puede deshacer."
         title="Eliminar Producto"
         onClose={() => {
           setIsDeleteModalOpen(false);

@@ -56,7 +56,7 @@ SELECT IFNULL(SUM(amount), 0) FROM payments;
 -- name: GetPendingAmount :one
 SELECT IFNULL(
     (SELECT SUM(amount) FROM sales WHERE is_paid = 0) +
-    (SELECT SUM(amount) FROM quotas WHERE is_paid = 0 AND due_date < date('now')), 
+    (SELECT SUM(amount) FROM quotas WHERE is_paid = 0 AND state_id IN (2, 3)), 
     0
 ) as pending_amount;
 

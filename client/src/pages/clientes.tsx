@@ -480,18 +480,27 @@ export default function ClientesPage() {
         <ConfirmModal
           cancelText="Cancelar"
           confirmText="Eliminar"
+          entityInfo={
+            deletingClient
+              ? {
+                  "Nombre completo": `${deletingClient.name} ${deletingClient.lastname}`,
+                  DNI: deletingClient.dni,
+                  Estado: statusTextMap[deletingClient.state?.id as keyof typeof statusTextMap] || "Desconocido",
+                  "ID del cliente": `#${deletingClient.id}`,
+                }
+              : undefined
+          }
+          impactList={[
+            "Se eliminará toda la información del cliente",
+            "Se eliminarán todas las ventas asociadas",
+            "Se eliminarán todos los pagos realizados",
+            "Se eliminarán todas las cuotas pendientes",
+            "Se eliminarán todas las notas relacionadas",
+          ]}
+          isDangerous={true}
           isLoading={isDeleting}
           isOpen={isDeleteModalOpen}
-          message={`¿Estás seguro de que quieres eliminar a ${deletingClient?.name} ${deletingClient?.lastname}?
-
-Esta acción eliminará permanentemente:
-• Toda la información del cliente
-• Todas las ventas asociadas
-• Todos los pagos realizados
-• Todas las cuotas pendientes
-• Todas las notas relacionadas
-
-Esta acción no se puede deshacer.`}
+          message="¿Estás seguro de que quieres eliminar este cliente? Esta acción no se puede deshacer."
           title="Eliminar Cliente"
           onClose={handleCloseDeleteModal}
           onConfirm={handleConfirmDelete}

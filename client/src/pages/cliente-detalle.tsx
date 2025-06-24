@@ -21,6 +21,7 @@ import {
   ModalFooter,
 } from "@heroui/modal";
 import { Input } from "@heroui/input";
+import { Textarea } from "@heroui/input";
 import { DatePicker } from "@heroui/date-picker";
 import { Tooltip } from "@heroui/tooltip";
 import { addToast } from "@heroui/toast";
@@ -41,10 +42,11 @@ import {
   LiaEyeSolid,
   LiaEyeSlashSolid,
   LiaArrowLeftSolid,
+  LiaStickyNoteSolid,
 } from "react-icons/lia";
 import { RiEditLine, RiDeleteBinLine, RiShoppingBagLine } from "react-icons/ri";
 
-import { api, ClientDetail, downloadSaleSheet } from "../api";
+import { api, ClientDetail, downloadSaleSheet, notesApi } from "../api";
 
 import DefaultLayout from "@/layouts/default";
 import SaleForm from "@/components/SaleForm";
@@ -132,6 +134,10 @@ function SaleDetails({ saleId }: { saleId: string }) {
   const [selectedQuota, setSelectedQuota] = useState<any>(null);
   const [selectedPayment, setSelectedPayment] = useState<any>(null);
   const [selectedSale, setSelectedSale] = useState<any>(null);
+  const [isAddNoteModalOpen, setIsAddNoteModalOpen] = useState(false);
+  const [isDeleteNoteModalOpen, setIsDeleteNoteModalOpen] = useState(false);
+  const [selectedNote, setSelectedNote] = useState<any>(null);
+  const [newNoteContent, setNewNoteContent] = useState("");
 
   const {
     data: saleDetails,
@@ -173,6 +179,60 @@ function SaleDetails({ saleId }: { saleId: string }) {
     },
   });
 
+  // Mutación para crear nota
+  const createNoteMutation = useMutation({
+    mutationFn: async ({ saleId, content }: { saleId: string; content: string }) => {
+      return await notesApi.create(saleId, content);
+    },
+    onSuccess: () => {
+      addToast({
+        title: "Nota agregada",
+        description: "La nota se ha agregado correctamente.",
+        color: "success",
+      });
+      // Invalidar queries para actualizar los datos
+      queryClient.invalidateQueries({ queryKey: ["sale-details", saleId] });
+      queryClient.invalidateQueries({ queryKey: ["client"] });
+      setIsAddNoteModalOpen(false);
+      setNewNoteContent("");
+    },
+    onError: (error) => {
+      addToast({
+        title: "Error al agregar nota",
+        description: "No se pudo agregar la nota. Inténtalo de nuevo.",
+        color: "danger",
+      });
+      console.error("Error creating note:", error);
+    },
+  });
+
+  // Mutación para eliminar nota
+  const deleteNoteMutation = useMutation({
+    mutationFn: async (noteId: string) => {
+      await notesApi.delete(noteId);
+    },
+    onSuccess: () => {
+      addToast({
+        title: "Nota eliminada",
+        description: "La nota se ha eliminado correctamente.",
+        color: "success",
+      });
+      // Invalidar queries para actualizar los datos
+      queryClient.invalidateQueries({ queryKey: ["sale-details", saleId] });
+      queryClient.invalidateQueries({ queryKey: ["client"] });
+      setIsDeleteNoteModalOpen(false);
+      setSelectedNote(null);
+    },
+    onError: (error) => {
+      addToast({
+        title: "Error al eliminar nota",
+        description: "No se pudo eliminar la nota. Inténtalo de nuevo.",
+        color: "danger",
+      });
+      console.error("Error deleting note:", error);
+    },
+  });
+
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat("es-AR", {
       style: "currency",
@@ -184,6 +244,18 @@ function SaleDetails({ saleId }: { saleId: string }) {
     if (!dateString) return "Sin fecha";
 
     return new Date(dateString).toLocaleDateString("es-AR");
+  };
+
+  const formatDateTime = (dateString?: string) => {
+    if (!dateString) return "Sin fecha";
+
+    return new Date(dateString).toLocaleString("es-AR", {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
   };
 
   const handlePayment = (quota: any) => {
@@ -264,6 +336,27 @@ function SaleDetails({ saleId }: { saleId: string }) {
   const confirmDeleteSale = () => {
     if (selectedSale) {
       deleteSaleMutation.mutate(selectedSale.id.toString());
+    }
+  };
+
+  const handleAddNote = () => {
+    setIsAddNoteModalOpen(true);
+  };
+
+  const handleDeleteNote = (note: any) => {
+    setSelectedNote(note);
+    setIsDeleteNoteModalOpen(true);
+  };
+
+  const confirmAddNote = () => {
+    if (newNoteContent.trim() && saleId) {
+      createNoteMutation.mutate({ saleId, content: newNoteContent.trim() });
+    }
+  };
+
+  const confirmDeleteNote = () => {
+    if (selectedNote) {
+      deleteNoteMutation.mutate(selectedNote.id.toString());
     }
   };
 
@@ -549,6 +642,154 @@ function SaleDetails({ saleId }: { saleId: string }) {
             </TableBody>
           </Table>
         </div>
+      )}
+
+      {/* Sección de Notas */}
+      <div>
+        <div className="flex items-center justify-between mb-3">
+          <h4 className="font-medium flex items-center gap-2">
+            <LiaStickyNoteSolid />
+            Notas
+          </h4>
+          <Button
+            color="primary"
+            size="sm"
+            startContent={<LiaPlusSolid />}
+            variant="flat"
+            onPress={handleAddNote}
+          >
+            Agregar Nota
+          </Button>
+        </div>
+        
+        {!saleDetails.notes || saleDetails.notes.length === 0 ? (
+          <div className="text-center py-6 text-default-500 bg-default-50 rounded-lg">
+            <LiaStickyNoteSolid className="text-3xl mx-auto mb-2" />
+            <p>No hay notas para esta venta</p>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {saleDetails.notes.map((note: any) => (
+              <div
+                key={note.id}
+                className="p-4 bg-default-50 rounded-lg border border-default-200"
+              >
+                <div className="flex items-start justify-between">
+                                     <div className="flex-1">
+                     <p className="text-sm text-default-900 mb-2 whitespace-pre-wrap">
+                       {note.content}
+                     </p>
+                                         <div className="flex items-center gap-2 text-xs text-default-500">
+                       <LiaCalendarAltSolid />
+                       <span>
+                         {note.created_at
+                           ? formatDateTime(note.created_at)
+                           : "Sin fecha"}
+                       </span>
+                       {note.updated_at && note.updated_at !== note.created_at && (
+                         <>
+                           <span>•</span>
+                           <span>
+                             Editado: {formatDateTime(note.updated_at)}
+                           </span>
+                         </>
+                       )}
+                     </div>
+                  </div>
+                  <Tooltip content="Eliminar nota">
+                    <Button
+                      isIconOnly
+                      color="danger"
+                      size="sm"
+                      variant="light"
+                      onPress={() => handleDeleteNote(note)}
+                    >
+                      <LiaTrashAltSolid />
+                    </Button>
+                  </Tooltip>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Modal de agregar nota */}
+      <Modal isOpen={isAddNoteModalOpen} size="md" onClose={() => setIsAddNoteModalOpen(false)}>
+        <ModalContent>
+          <ModalHeader className="flex flex-col gap-1">
+            <div className="flex items-center gap-2">
+              <LiaStickyNoteSolid className="text-2xl text-primary" />
+              <span>Agregar Nota</span>
+            </div>
+          </ModalHeader>
+          <ModalBody>
+            <div className="space-y-4">
+              <Textarea
+                isRequired
+                description="Escribe una nota sobre esta venta"
+                label="Contenido de la nota"
+                labelPlacement="outside"
+                minRows={3}
+                maxRows={8}
+                placeholder="Ej: Cliente solicita cambio de fecha de entrega, necesita que se coordine para el próximo viernes..."
+                value={newNoteContent}
+                onValueChange={setNewNoteContent}
+              />
+            </div>
+          </ModalBody>
+          <ModalFooter>
+            <Button
+              variant="light"
+              onPress={() => {
+                setIsAddNoteModalOpen(false);
+                setNewNoteContent("");
+              }}
+            >
+              Cancelar
+            </Button>
+            <Button
+              color="primary"
+              isDisabled={!newNoteContent.trim()}
+              isLoading={createNoteMutation.isPending}
+              onPress={confirmAddNote}
+            >
+              Agregar Nota
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
+
+      {/* Modal de confirmación para eliminar nota */}
+      {isDeleteNoteModalOpen && selectedNote && (
+        <ConfirmModal
+          cancelText="Cancelar"
+          confirmText="Eliminar"
+          entityInfo={{
+            "ID de la nota": `#${selectedNote.id}`,
+            "Contenido": selectedNote.content.length > 50 
+              ? `${selectedNote.content.substring(0, 50)}...` 
+              : selectedNote.content,
+                         "Fecha de creación": selectedNote.created_at 
+               ? formatDateTime(selectedNote.created_at) 
+               : "Sin fecha",
+          }}
+          impactList={[
+            "Se eliminará la nota permanentemente",
+            "No se podrá recuperar el contenido",
+            "Esta acción no afectará la venta ni otros datos",
+          ]}
+          isDangerous={true}
+          isLoading={deleteNoteMutation.isPending}
+          isOpen={isDeleteNoteModalOpen}
+          message="¿Estás seguro de que quieres eliminar esta nota? Esta acción no se puede deshacer."
+          title="Eliminar Nota"
+          onClose={() => {
+            setIsDeleteNoteModalOpen(false);
+            setSelectedNote(null);
+          }}
+          onConfirm={confirmDeleteNote}
+        />
       )}
 
       {/* Modal de pago */}
@@ -1653,7 +1894,6 @@ export default function ClienteDetallePage() {
             ) : (
               <Accordion
                 className="gap-2"
-                selectionMode="multiple"
                 variant="splitted"
               >
                 {client.sales.map((sale: any) => (
@@ -1726,10 +1966,28 @@ export default function ClienteDetallePage() {
 
       {client && (
         <ConfirmModal
+          cancelText="Cancelar"
+          confirmText="Eliminar"
+          entityInfo={{
+            "Nombre completo": `${client.name} ${client.lastname}`,
+            DNI: client.dni,
+            Estado: statusTextMap[client.state?.id as keyof typeof statusTextMap] || "Desconocido",
+            "ID del cliente": `#${client.id}`,
+            Email: client.email || "Sin email",
+            Teléfono: client.phone || "Sin teléfono",
+          }}
+          impactList={[
+            "Se eliminará toda la información del cliente",
+            "Se eliminarán todas las ventas asociadas",
+            "Se eliminarán todos los pagos realizados",
+            "Se eliminarán todas las cuotas pendientes",
+            "Se eliminarán todas las notas relacionadas",
+          ]}
+          isDangerous={true}
           isLoading={deleteMutation.isPending}
           isOpen={isConfirmDeleteOpen}
-          message={`¿Estás seguro de que quieres eliminar al cliente ${client.name} ${client.lastname}? Esta acción no se puede deshacer y eliminará todas sus ventas asociadas.`}
-          title="Confirmar Eliminación"
+          message="¿Estás seguro de que quieres eliminar este cliente? Esta acción no se puede deshacer."
+          title="Eliminar Cliente"
           onClose={() => setIsConfirmDeleteOpen(false)}
           onConfirm={handleConfirmDelete}
         />
