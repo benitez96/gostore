@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   RiUserLine,
@@ -29,171 +29,65 @@ import {
   TableRow,
   TableCell,
 } from "@heroui/table";
-import { useAsyncList, AsyncListLoadOptions } from "@react-stately/data";
-import { useInfiniteScroll } from "@heroui/use-infinite-scroll";
-import { addToast } from "@heroui/toast";
-import axios from "axios";
 
-import { Client, ClientDetail, clientsApi, ApiClientsResponse } from "@/api";
+import { Client, ClientDetail, clientsApi } from "@/api";
 import ClientForm from "@/components/ClientForm";
 import ConfirmModal from "@/components/ConfirmModal";
 import DefaultLayout from "@/layouts/default";
+import { useToast } from "@/shared/hooks/useToast";
+import { statusColorMap, statusTextMap, statusOptions } from "@/shared/utils/constants";
+import { capitalize } from "@/shared/utils/formatters";
 
-const statusColorMap = {
-  1: "success",
-  2: "warning",
-  3: "danger",
-} as const;
+import { useClients } from "../hooks/useClients";
 
-const statusTextMap = {
-  1: "Al día",
-  2: "Advertencia",
-  3: "Deudor",
-} as const;
-
-const statusOptions = [
-  { name: "Al día", uid: "1" },
-  { name: "Advertencia", uid: "2" },
-  { name: "Deudor", uid: "3" },
-];
-
-function capitalize(s: string) {
-  return s ? s.charAt(0).toUpperCase() + s.slice(1).toLowerCase() : "";
-}
-
-export default function ClientesPage() {
+export default function ClientsPage() {
   const navigate = useNavigate();
+  const { showSuccess, showApiError } = useToast();
+  
   const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState<Set<string>>(new Set(["1", "2", "3"])); // Por defecto todos seleccionados
+  const [statusFilter, setStatusFilter] = useState<Set<string>>(new Set(["1", "2", "3"]));
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [editingClient, setEditingClient] = useState<ClientDetail | null>(null);
+  
+  // Delete modal state
   const [deletingClient, setDeletingClient] = useState<Client | null>(null);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
-  const [totalClients, setTotalClients] = useState(0);
 
-  const [isLoading, setIsLoading] = useState(true);
-  const [hasMore, setHasMore] = useState(false);
-
-  const loadClients = useCallback(
-    async ({
-      signal,
-      cursor,
-      filterText,
-    }: AsyncListLoadOptions<Client, string>) => {
-      // When loading more, the top-level isLoading should be false
-      setIsLoading(!cursor);
-
-      try {
-        const page = cursor ? parseInt(cursor, 10) : 1;
-        const limit = 10;
-        const offset = (page - 1) * limit;
-
-        // Convertir el filtro de estado a array de números
-        let stateIds: number[] = [];
-        if (statusFilter.size > 0 && statusFilter.size < statusOptions.length) {
-          stateIds = Array.from(statusFilter).map(Number);
-        }
-
-        const response: ApiClientsResponse = await clientsApi.getAll({
-          offset,
-          limit,
-          search: filterText,
-          states: stateIds.length > 0 ? stateIds : undefined,
-          signal,
-        });
-
-        setHasMore(response.count > page * limit);
-        setTotalClients(response.count);
-
-        return {
-          items: response.results || [],
-          cursor:
-            response.count > page * limit ? (page + 1).toString() : undefined,
-        };
-      } catch (error) {
-        if (axios.isCancel(error)) {
-          // Request was canceled
-
-          // This part is tricky, returning previous state might be complex.
-          // For now, returning an empty list on cancel is safer.
-          return { items: [], cursor: undefined };
-        }
-
-        console.error("Error loading clients:", error);
-        addToast({
-          title: "Error al cargar clientes",
-          description:
-            "No se pudieron cargar los clientes. Inténtalo de nuevo.",
-          color: "danger",
-        });
-
-        return {
-          items: [],
-          cursor: undefined,
-        };
-      } finally {
-        // Ensure loading is always false when done, for both success and error
-        if (!cursor) {
-          setIsLoading(false);
-        }
-      }
-    },
-    [statusFilter],
-  );
-
-  // Use AsyncList for infinite scroll with HeroUI Table
-  const list = useAsyncList<Client>({
-    load: loadClients,
-    getKey: (item: Client) => item.id,
-  });
-
-  // Debounce search text to update the list
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      list.setFilterText(search);
-    }, 500);
-
-    return () => clearTimeout(timer);
-  }, [search]);
-
-  // Reload list when state filters change
-  useEffect(() => {
-    list.reload();
-  }, [statusFilter]);
-
-  const [loaderRef, scrollerRef] = useInfiniteScroll({
+  // Use the clients hook
+  const {
+    items: clients,
+    isLoading,
     hasMore,
-    onLoadMore: list.loadMore,
-  });
+    totalClients,
+    loadMore,
+    reload,
+    loaderRef,
+    scrollerRef,
+  } = useClients({ searchFilter: search, statusFilter, limit: 10 });
+
+  // Handle search change
+  const handleSearchChange = (value: string) => {
+    setSearch(value);
+  };
+
+  // Handle status filter change
+  const handleStatusFilterChange = (keys: Set<string>) => {
+    setStatusFilter(keys);
+  };
 
   const handleCreateClient = async (clientData: Omit<ClientDetail, "id">) => {
     setIsSubmitting(true);
     try {
       await clientsApi.create(clientData);
-      // Reload the list
-      list.reload();
-
-      addToast({
-        title: "Cliente creado",
-        description: "El cliente se ha creado exitosamente",
-        color: "success",
-      });
+      reload();
+      showSuccess("Cliente creado", "El cliente se ha creado exitosamente");
+      setIsFormOpen(false);
+      setEditingClient(null);
     } catch (error: any) {
       console.error("Error creating client:", error);
-
-      // Extract error message from API response
-      const errorMessage =
-        error.response?.data?.msg ||
-        error.message ||
-        "No se pudo crear el cliente. Inténtalo de nuevo.";
-
-      addToast({
-        title: "Error al crear cliente",
-        description: errorMessage,
-        color: "danger",
-      });
+      showApiError("Error al crear cliente", error);
       throw error;
     } finally {
       setIsSubmitting(false);
@@ -206,28 +100,13 @@ export default function ClientesPage() {
     setIsSubmitting(true);
     try {
       await clientsApi.update(editingClient.id, clientData);
-      // Reload the list
-      list.reload();
-
-      addToast({
-        title: "Cliente actualizado",
-        description: "El cliente se ha actualizado exitosamente",
-        color: "success",
-      });
+      reload();
+      showSuccess("Cliente actualizado", "El cliente se ha actualizado exitosamente");
+      setIsFormOpen(false);
+      setEditingClient(null);
     } catch (error: any) {
       console.error("Error updating client:", error);
-
-      // Extract error message from API response
-      const errorMessage =
-        error.response?.data?.msg ||
-        error.message ||
-        "No se pudo actualizar el cliente. Inténtalo de nuevo.";
-
-      addToast({
-        title: "Error al actualizar cliente",
-        description: errorMessage,
-        color: "danger",
-      });
+      showApiError("Error al actualizar cliente", error);
       throw error;
     } finally {
       setIsSubmitting(false);
@@ -236,25 +115,12 @@ export default function ClientesPage() {
 
   const handleEditClient = async (client: Client) => {
     try {
-      // Fetch full client details
       const clientDetail = await clientsApi.getById(client.id);
-
       setEditingClient(clientDetail);
       setIsFormOpen(true);
     } catch (error: any) {
       console.error("Error fetching client details:", error);
-
-      // Extract error message from API response
-      const errorMessage =
-        error.response?.data?.msg ||
-        error.message ||
-        "No se pudieron cargar los datos del cliente.";
-
-      addToast({
-        title: "Error al cargar cliente",
-        description: errorMessage,
-        color: "danger",
-      });
+      showApiError("Error al cargar cliente", error);
     }
   };
 
@@ -264,7 +130,7 @@ export default function ClientesPage() {
   };
 
   const handleOpenCreateForm = () => {
-    setEditingClient(null); // Ensure we're in create mode
+    setEditingClient(null);
     setIsFormOpen(true);
   };
 
@@ -283,32 +149,16 @@ export default function ClientesPage() {
     setIsDeleting(true);
     try {
       await clientsApi.delete(deletingClient.id);
-      // Reload the list
-      list.reload();
-
-      addToast({
-        title: "Cliente eliminado",
-        description: `${deletingClient.name} ${deletingClient.lastname} ha sido eliminado exitosamente`,
-        color: "success",
-      });
-
-      // Close modal and reset state
+      reload();
+      showSuccess(
+        "Cliente eliminado",
+        `${deletingClient.name} ${deletingClient.lastname} ha sido eliminado exitosamente`
+      );
       setIsDeleteModalOpen(false);
       setDeletingClient(null);
     } catch (error: any) {
       console.error("Error deleting client:", error);
-
-      // Extract error message from API response
-      const errorMessage =
-        error.response?.data?.msg ||
-        error.message ||
-        "No se pudo eliminar el cliente. Inténtalo de nuevo.";
-
-      addToast({
-        title: "Error al eliminar cliente",
-        description: errorMessage,
-        color: "danger",
-      });
+      showApiError("Error al eliminar cliente", error);
     } finally {
       setIsDeleting(false);
     }
@@ -326,7 +176,7 @@ export default function ClientesPage() {
     { name: "ACCIONES", uid: "actions" },
   ];
 
-  const renderCell = useCallback((client: Client, columnKey: React.Key) => {
+  const renderCell = (client: Client, columnKey: React.Key) => {
     const cellValue = client[columnKey as keyof Client];
 
     switch (columnKey) {
@@ -376,12 +226,12 @@ export default function ClientesPage() {
       default:
         return typeof cellValue === "object" ? "" : cellValue;
     }
-  }, []);
+  };
 
   return (
     <DefaultLayout>
       <section className="flex flex-col gap-6">
-        {/* Header con título y botón de refresh */}
+        {/* Header con título y botón de crear */}
         <div className="flex items-center justify-between max-w-7xl w-full px-4">
           <div className="flex items-center gap-3">
             <div className="p-3 bg-gradient-to-br from-primary-500 to-primary-600 rounded-xl">
@@ -396,67 +246,63 @@ export default function ClientesPage() {
               </p>
             </div>
           </div>
+          <Button
+            className="font-medium"
+            color="primary"
+            startContent={<IoPersonAddOutline />}
+            variant="flat"
+            onPress={handleOpenCreateForm}
+          >
+            Crear Cliente
+          </Button>
         </div>
 
         <div className="max-w-7xl w-full px-4">
           {/* Top Content */}
-          <div className="flex justify-between">
-            <div className="flex flex-col gap-4 mb-6 w-full">
-              <div className="flex gap-3 items-end">
-                <Input
-                  isClearable
-                  className="w-full sm:max-w-[44%]"
-                  placeholder="Buscar por nombre, apellido o DNI..."
-                  startContent={<RiSearchLine className="text-default-400" />}
-                  value={search}
-                  onValueChange={setSearch}
-                />
-                <Dropdown>
-                  <DropdownTrigger>
-                    <Button
-                      endContent={<RiArrowDownSLine className="text-small" />}
-                      variant="flat"
-                    >
-                      {statusFilter.size === statusOptions.length 
-                        ? "Estado" 
-                        : `Estado (${statusFilter.size})`
-                      }
-                    </Button>
-                  </DropdownTrigger>
-                  <DropdownMenu
-                    disallowEmptySelection
-                    aria-label="Filtro de estados"
-                    closeOnSelect={false}
-                    selectedKeys={statusFilter}
-                    selectionMode="multiple"
-                    onSelectionChange={(keys) => {
-                      setStatusFilter(new Set(Array.from(keys).map(String)));
-                    }}
+          <div className="flex flex-col gap-4 mb-6">
+            <div className="flex gap-3 items-end">
+              <Input
+                isClearable
+                className="w-full sm:max-w-[44%]"
+                placeholder="Buscar por nombre, apellido o DNI..."
+                startContent={<RiSearchLine className="text-default-400" />}
+                value={search}
+                onValueChange={handleSearchChange}
+              />
+              <Dropdown>
+                <DropdownTrigger>
+                  <Button
+                    endContent={<RiArrowDownSLine className="text-small" />}
+                    variant="flat"
                   >
-                    {statusOptions.map((status) => (
-                      <DropdownItem key={status.uid} className="capitalize">
-                        {status.name}
-                      </DropdownItem>
-                    ))}
-                  </DropdownMenu>
-                </Dropdown>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-default-400 text-small">
-                  Total {totalClients} clientes
-                </span>
-              </div>
+                    {statusFilter.size === statusOptions.length 
+                      ? "Estado" 
+                      : `Estado (${statusFilter.size})`
+                    }
+                  </Button>
+                </DropdownTrigger>
+                <DropdownMenu
+                  disallowEmptySelection
+                  aria-label="Filtro de estados"
+                  closeOnSelect={false}
+                  selectedKeys={statusFilter}
+                  selectionMode="multiple"
+                  onSelectionChange={(keys) => {
+                    handleStatusFilterChange(new Set(Array.from(keys).map(String)));
+                  }}
+                >
+                  {statusOptions.map((status) => (
+                    <DropdownItem key={status.uid} className="capitalize">
+                      {status.name}
+                    </DropdownItem>
+                  ))}
+                </DropdownMenu>
+              </Dropdown>
             </div>
-            <div className="flex justify-end items-end pb-6">
-              <Button
-                className="font-medium w-full sm:w-auto"
-                color="primary"
-                startContent={<IoPersonAddOutline />}
-                variant="flat"
-                onPress={handleOpenCreateForm}
-              >
-                Crear Cliente
-              </Button>
+            <div className="flex justify-between items-center">
+              <span className="text-default-400 text-small">
+                Total {totalClients} clientes
+              </span>
             </div>
           </div>
 
@@ -494,7 +340,7 @@ export default function ClientesPage() {
             <TableBody
               emptyContent="No se encontraron clientes"
               isLoading={isLoading}
-              items={list.items}
+              items={clients}
               loadingContent={
                 <Spinner
                   classNames={{ label: "text-foreground mt-4" }}
@@ -567,4 +413,4 @@ export default function ClientesPage() {
       </section>
     </DefaultLayout>
   );
-}
+} 

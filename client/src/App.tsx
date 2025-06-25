@@ -1,19 +1,19 @@
 import { Route, Routes } from "react-router-dom";
 
 import IndexPage from "@/pages/index";
-import DashboardPage from "@/pages/dashboard";
-import ClientesPage from "@/pages/clientes";
-import ProductosPage from "@/pages/productos";
-import ClienteDetallePage from "@/pages/cliente-detalle";
+import DashboardPage from "@/features/dashboard/pages/DashboardPage";
+import ClientsPage from "@/features/clients/pages/ClientsPage";
+import ClientDetailPage from "@/features/clients/pages/ClientDetailPage";
+import ProductsPage from "@/features/products/pages/ProductsPage";
 
 function App() {
   return (
     <Routes>
       <Route element={<IndexPage />} path="/" />
       <Route element={<DashboardPage />} path="/dashboard" />
-      <Route element={<ClientesPage />} path="/clientes" />
-      <Route element={<ClienteDetallePage />} path="/clientes/:id" />
-      <Route element={<ProductosPage />} path="/productos" />
+      <Route element={<ClientsPage />} path="/clientes" />
+      <Route element={<ClientDetailPage />} path="/clientes/:id" />
+      <Route element={<ProductsPage />} path="/productos" />
     </Routes>
   );
 }

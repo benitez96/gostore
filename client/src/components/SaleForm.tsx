@@ -9,8 +9,7 @@ import {
 } from "@heroui/modal";
 import { Button } from "@heroui/button";
 import { Input } from "@heroui/input";
-import { NumberInput } from "@heroui/number-input";
-import { Select, SelectItem } from "@heroui/select";
+
 import { Autocomplete, AutocompleteItem } from "@heroui/autocomplete";
 import { DatePicker } from "@heroui/date-picker";
 import {
@@ -23,7 +22,7 @@ import {
 } from "@heroui/table";
 import { Chip } from "@heroui/chip";
 import { Divider } from "@heroui/divider";
-import { Spinner } from "@heroui/spinner";
+
 import { parseDate, getLocalTimeZone } from "@internationalized/date";
 import {
   LiaMoneyBillWaveSolid,
@@ -31,7 +30,7 @@ import {
   LiaCreditCardSolid,
   LiaPlusSolid,
   LiaTrashSolid,
-  LiaEditSolid,
+
   LiaEyeSolid,
   LiaEyeSlashSolid,
   LiaSearchSolid,
@@ -44,6 +43,7 @@ import {
   SaleFormProduct,
   CreateSaleDto,
 } from "../types";
+import { formatCurrency } from "@/shared/utils/formatters";
 
 interface SaleFormProps {
   isOpen: boolean;
@@ -334,12 +334,7 @@ export default function SaleForm({
     createSaleMutation.mutate(saleData);
   };
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat("es-AR", {
-      style: "currency",
-      currency: "ARS",
-    }).format(amount);
-  };
+
 
   const productsTotal = calculateTotal();
   // Convertir quota_price de string a number para cálculos
