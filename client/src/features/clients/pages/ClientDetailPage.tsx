@@ -11,10 +11,23 @@ import { ConfirmModal } from "@/shared/components/feedback";
 
 import { api, ClientDetail, downloadSaleSheet } from "@/api";
 import { ClientHeader } from "../components/ClientHeader";
-import { SalesList } from "@/features/sales/components/SalesList";
+import { SalesSection } from "@/features/sales/components/SalesSection";
 import { PaymentModal } from "@/features/sales/components/PaymentModal";
 import ClientForm from "@/components/ClientForm";
 import SaleForm from "@/components/SaleForm";
+
+const statusTextMap = {
+  1: "Al día",
+  2: "Advertencia",
+  3: "Deudor",
+} as const;
+
+const formatCurrency = (amount: number) => {
+  return new Intl.NumberFormat("es-AR", {
+    style: "currency",
+    currency: "ARS",
+  }).format(amount);
+};
 
 export default function ClientDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -25,11 +38,18 @@ export default function ClientDetailPage() {
   const editModal = useModal();
   const saleModal = useModal();
   const paymentModal = useModal();
-  const confirmModal = useConfirmModal();
   
   const [selectedSale, setSelectedSale] = useState<string>("");
   const [selectedQuota, setSelectedQuota] = useState<any>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  
+  // Confirm modals
+  const [confirmDeleteClient, setConfirmDeleteClient] = useState(false);
+  const [confirmDeleteSale, setConfirmDeleteSale] = useState(false);
+  const [confirmDeletePayment, setConfirmDeletePayment] = useState(false);
+  const [selectedSaleToDelete, setSelectedSaleToDelete] = useState<any>(null);
+  const [selectedPaymentToDelete, setSelectedPaymentToDelete] = useState<{ payment: any; quota: any } | null>(null);
+  const [isConfirmLoading, setIsConfirmLoading] = useState(false);
 
   // Fetch client data
   const {
@@ -84,20 +104,21 @@ export default function ClientDetailPage() {
   };
 
   const handleDeleteClient = () => {
-    confirmModal.openConfirm({
-      title: "Confirmar eliminación",
-      message: `¿Estás seguro de que deseas eliminar el cliente "${client.name} ${client.lastname}"? Esta acción no se puede deshacer.`,
-      confirmText: "Eliminar Cliente",
-      onConfirm: async () => {
-        try {
-          await api.delete(`/api/clients/${client.id}`);
-          showSuccess("Cliente eliminado", "El cliente se ha eliminado exitosamente");
-          navigate("/clientes");
-        } catch (error) {
-          showApiError("Error al eliminar cliente", error);
-        }
-      },
-    });
+    setConfirmDeleteClient(true);
+  };
+
+  const handleConfirmDeleteClient = async () => {
+    setIsConfirmLoading(true);
+    try {
+      await api.delete(`/api/clients/${client.id}`);
+      showSuccess("Cliente eliminado", "El cliente se ha eliminado exitosamente");
+      navigate("/clientes");
+    } catch (error) {
+      showApiError("Error al eliminar cliente", error);
+    } finally {
+      setIsConfirmLoading(false);
+      setConfirmDeleteClient(false);
+    }
   };
 
   const handleCreateSale = () => {
@@ -120,20 +141,25 @@ export default function ClientDetailPage() {
   };
 
   const handleDeleteSale = (sale: any) => {
-    confirmModal.openConfirm({
-      title: "Confirmar eliminación",
-      message: `¿Estás seguro de que deseas eliminar la venta #${sale.id}? Esta acción no se puede deshacer.`,
-      confirmText: "Eliminar Venta",
-      onConfirm: async () => {
-        try {
-          await api.delete(`/api/sales/${sale.id}`);
-          queryClient.invalidateQueries({ queryKey: ["client", id] });
-          showSuccess("Venta eliminada", "La venta se ha eliminado exitosamente");
-        } catch (error) {
-          showApiError("Error al eliminar venta", error);
-        }
-      },
-    });
+    setSelectedSaleToDelete(sale);
+    setConfirmDeleteSale(true);
+  };
+
+  const handleConfirmDeleteSale = async () => {
+    if (!selectedSaleToDelete) return;
+    
+    setIsConfirmLoading(true);
+    try {
+      await api.delete(`/api/sales/${selectedSaleToDelete.id}`);
+      queryClient.invalidateQueries({ queryKey: ["client", id] });
+      showSuccess("Venta eliminada", "La venta se ha eliminado exitosamente");
+    } catch (error) {
+      showApiError("Error al eliminar venta", error);
+    } finally {
+      setIsConfirmLoading(false);
+      setConfirmDeleteSale(false);
+      setSelectedSaleToDelete(null);
+    }
   };
 
   const handleDownloadSheet = async (saleId: string) => {
@@ -145,31 +171,69 @@ export default function ClientDetailPage() {
     }
   };
 
+  const handlePaymentClick = (quota: any, saleId: string) => {
+    setSelectedQuota(quota);
+    setSelectedSale(saleId);
+    paymentModal.open();
+  };
+
+  const handleDeletePayment = (payment: any, quota: any) => {
+    setSelectedPaymentToDelete({ payment, quota });
+    setConfirmDeletePayment(true);
+  };
+
+  const handleConfirmDeletePayment = async () => {
+    if (!selectedPaymentToDelete) return;
+    
+    setIsConfirmLoading(true);
+    try {
+      await api.delete(`/api/payments/${selectedPaymentToDelete.payment.id}`);
+      queryClient.invalidateQueries({ queryKey: ["client", id] });
+      // También invalidar los detalles de la venta para actualizar los datos inmediatamente
+      if (selectedSale) {
+        queryClient.invalidateQueries({ queryKey: ["sale-details", selectedSale] });
+      }
+      showSuccess("Pago eliminado", "El pago se ha eliminado exitosamente");
+    } catch (error) {
+      showApiError("Error al eliminar pago", error);
+    } finally {
+      setIsConfirmLoading(false);
+      setConfirmDeletePayment(false);
+      setSelectedPaymentToDelete(null);
+    }
+  };
+
   const handlePaymentSuccess = () => {
     queryClient.invalidateQueries({ queryKey: ["client", id] });
+    // También invalidar los detalles de la venta para actualizar los datos inmediatamente
+    if (selectedSale) {
+      queryClient.invalidateQueries({ queryKey: ["sale-details", selectedSale] });
+    }
     setSelectedQuota(null);
+    // No resetear selectedSale para mantener el acordeón abierto
+    paymentModal.close();
   };
 
   return (
     <DefaultLayout>
-      <div className="max-w-7xl mx-auto p-4 space-y-6">
-        {/* Client Header */}
-        <ClientHeader
-          client={client}
-          onEdit={handleEditClient}
-          onDelete={handleDeleteClient}
-          onCreateSale={handleCreateSale}
-        />
+      {/* Client Header */}
+      <ClientHeader
+        client={client}
+        onEdit={handleEditClient}
+        onDelete={handleDeleteClient}
+      />
 
-        {/* Sales Section */}
-        <SalesList
-          sales={client.sales || []}
-          onDeleteSale={handleDeleteSale}
-          onDownloadSheet={handleDownloadSheet}
-          selectedSale={selectedSale}
-          onSaleSelect={setSelectedSale}
-        />
-      </div>
+      {/* Sales Section */}
+      <SalesSection
+        sales={client.sales || []}
+        onDeleteSale={handleDeleteSale}
+        onDownloadSheet={handleDownloadSheet}
+        selectedSale={selectedSale}
+        onSaleSelect={setSelectedSale}
+        onPaymentClick={handlePaymentClick}
+        onDeletePayment={handleDeletePayment}
+        onCreateSale={handleCreateSale}
+      />
 
       {/* Modals */}
       <ClientForm
@@ -191,22 +255,100 @@ export default function ClientDetailPage() {
 
       <PaymentModal
         isOpen={paymentModal.isOpen}
-        onClose={paymentModal.close}
+        onClose={() => {
+          paymentModal.close();
+          setSelectedQuota(null);
+          // No resetear selectedSale para mantener el acordeón abierto
+        }}
         quota={selectedQuota}
         saleId={selectedSale}
         onSuccess={handlePaymentSuccess}
       />
 
+      {/* Enhanced Confirm Modals */}
       <ConfirmModal
-        isOpen={confirmModal.isOpen}
-        onClose={confirmModal.closeConfirm}
-        onConfirm={confirmModal.handleConfirm}
-        title={confirmModal.config?.title || ""}
-        message={confirmModal.config?.message || ""}
-        confirmText={confirmModal.config?.confirmText}
-        cancelText={confirmModal.config?.cancelText}
-        isLoading={confirmModal.isLoading}
+        isOpen={confirmDeleteClient}
+        onClose={() => setConfirmDeleteClient(false)}
+        onConfirm={handleConfirmDeleteClient}
+        title="Eliminar Cliente"
+        message="¿Estás seguro de que quieres eliminar este cliente? Esta acción no se puede deshacer."
+        confirmText="Eliminar Cliente"
+        cancelText="Cancelar"
+        isLoading={isConfirmLoading}
+        isDangerous={true}
+        entityInfo={{
+          "Nombre completo": `${client.name} ${client.lastname}`,
+          DNI: client.dni,
+          Estado: statusTextMap[client.state?.id as keyof typeof statusTextMap] || "Desconocido",
+          "ID del cliente": `#${client.id}`,
+          Email: client.email || "Sin email",
+          Teléfono: client.phone || "Sin teléfono",
+        }}
+        impactList={[
+          "Se eliminará toda la información del cliente",
+          "Se eliminarán todas las ventas asociadas",
+          "Se eliminarán todos los pagos realizados",
+          "Se eliminarán todas las cuotas pendientes",
+          "Se eliminarán todas las notas relacionadas",
+        ]}
       />
+
+      {selectedSaleToDelete && (
+        <ConfirmModal
+          isOpen={confirmDeleteSale}
+          onClose={() => {
+            setConfirmDeleteSale(false);
+            setSelectedSaleToDelete(null);
+          }}
+          onConfirm={handleConfirmDeleteSale}
+          title="Eliminar Venta"
+          message="¿Estás seguro de que quieres eliminar esta venta? Esta acción no se puede deshacer."
+          confirmText="Eliminar Venta"
+          cancelText="Cancelar"
+          isLoading={isConfirmLoading}
+          isDangerous={true}
+          entityInfo={{
+            "ID de venta": `#${selectedSaleToDelete.id}`,
+            "Monto total": formatCurrency(selectedSaleToDelete.total_amount || 0),
+            "Fecha": selectedSaleToDelete.created_at ? new Date(selectedSaleToDelete.created_at).toLocaleDateString("es-AR") : "Sin fecha",
+            "Cuotas": `${selectedSaleToDelete.quotas?.length || 0} cuotas`,
+          }}
+          impactList={[
+            "Se eliminarán todas las cuotas asociadas a esta venta",
+            "Se eliminarán todos los pagos registrados para estas cuotas",
+            "Se eliminarán todos los productos asociados a esta venta",
+            "Se recalculará el estado del cliente",
+          ]}
+        />
+      )}
+
+      {selectedPaymentToDelete && (
+        <ConfirmModal
+          isOpen={confirmDeletePayment}
+          onClose={() => {
+            setConfirmDeletePayment(false);
+            setSelectedPaymentToDelete(null);
+          }}
+          onConfirm={handleConfirmDeletePayment}
+          title="Eliminar Pago"
+          message="¿Estás seguro de que quieres eliminar este pago? Esta acción no se puede deshacer."
+          confirmText="Eliminar Pago"
+          cancelText="Cancelar"
+          isLoading={isConfirmLoading}
+          isDangerous={true}
+          entityInfo={{
+            "Cuota": `#${selectedPaymentToDelete.quota?.number}`,
+            "Monto del pago": formatCurrency(selectedPaymentToDelete.payment?.amount || 0),
+            "Fecha del pago": selectedPaymentToDelete.payment?.date ? new Date(selectedPaymentToDelete.payment.date).toLocaleDateString("es-AR") : "Sin fecha",
+            "ID del pago": `#${selectedPaymentToDelete.payment?.id}`,
+          }}
+          impactList={[
+            `La cuota volverá a tener un saldo pendiente de ${formatCurrency((selectedPaymentToDelete.quota?.amount || 0) - ((selectedPaymentToDelete.quota?.payments?.reduce((sum: number, p: any) => sum + p.amount, 0) || 0) - (selectedPaymentToDelete.payment?.amount || 0)))}`,
+            "Se recalculará el estado de la cuota",
+            "Se recalculará el estado del cliente",
+          ]}
+        />
+      )}
     </DefaultLayout>
   );
 } 

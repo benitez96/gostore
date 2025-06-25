@@ -110,17 +110,18 @@ export default function SaleForm({
   const createSaleMutation = useMutation({
     mutationFn: async (saleData: CreateSaleDto) => {
       const response = await api.post("/api/sales", saleData);
-
       return response.data;
     },
     onSuccess: () => {
+      // Invalidar tanto la query con string como con número
       queryClient.invalidateQueries({ queryKey: ["client", clientId] });
+      queryClient.invalidateQueries({ queryKey: ["client", parseInt(clientId)] });
+      queryClient.invalidateQueries({ queryKey: ["client"] });
       onClose();
       resetForm();
     },
     onError: (error: any) => {
       console.error("Error creating sale:", error);
-      // TODO: Mostrar toast de error
     },
   });
 

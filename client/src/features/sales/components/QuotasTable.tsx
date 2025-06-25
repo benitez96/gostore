@@ -1,16 +1,16 @@
-import {
-  Table,
-  TableHeader,
-  TableColumn,
-  TableBody,
-  TableRow,
-  TableCell,
-} from "@heroui/table";
-import { Button } from "@heroui/button";
 import { Tooltip } from "@heroui/tooltip";
-import { LiaCreditCardSolid, LiaEditSolid, LiaTrashAltSolid } from "react-icons/lia";
+import { Table, TableHeader, TableColumn, TableBody, TableRow, TableCell } from "@heroui/table";
+import {
+  LiaFileInvoiceDollarSolid,
+  LiaTrashAltSolid,
+  LiaReceiptSolid,
+  LiaCreditCardSolid,
+} from "react-icons/lia";
+import { RiEditLine } from "react-icons/ri";
 
+import { downloadPaymentReceipt } from "@/api";
 import { CurrencyDisplay, DateDisplay, StatusChip } from "@/shared/components/ui";
+import { useToast } from "@/shared/hooks/useToast";
 
 export interface QuotasTableProps {
   quotas: any[];
@@ -25,65 +25,37 @@ export function QuotasTable({
   onEditQuota,
   onDeletePayment,
 }: QuotasTableProps) {
-  const renderPayments = (quota: any) => {
-    if (!quota.payments || quota.payments.length === 0) {
-      return <span className="text-default-400">Sin pagos</span>;
+  const { showSuccess, showApiError } = useToast();
+
+  const handleDownloadPaymentReceipt = async (paymentId: string | number) => {
+    try {
+      await downloadPaymentReceipt(paymentId);
+      showSuccess("Comprobante generado", "El comprobante se descargó correctamente.");
+    } catch (error) {
+      showApiError("Error al generar comprobante", "No se pudo descargar el comprobante. Inténtalo de nuevo.");
     }
-
-    return (
-      <div className="flex flex-col gap-1">
-        {quota.payments.map((payment: any, index: number) => (
-          <div key={index} className="flex items-center justify-between bg-default-50 p-2 rounded">
-            <div className="flex flex-col">
-              <CurrencyDisplay amount={payment.amount} size="sm" />
-              <DateDisplay date={payment.date} className="text-xs" />
-            </div>
-            <Tooltip content="Eliminar pago">
-              <Button
-                isIconOnly
-                size="sm"
-                variant="light"
-                color="danger"
-                onPress={() => onDeletePayment?.(payment, quota)}
-              >
-                <LiaTrashAltSolid />
-              </Button>
-            </Tooltip>
-          </div>
-        ))}
-      </div>
-    );
-  };
-
-  const calculatePendingAmount = (quota: any) => {
-    const totalPaid = quota.payments?.reduce(
-      (sum: number, payment: any) => sum + payment.amount,
-      0,
-    ) || 0;
-    return quota.amount - totalPaid;
   };
 
   return (
-    <Table aria-label="Tabla de cuotas">
+    <Table aria-label="Cuotas de la venta">
       <TableHeader>
-        <TableColumn>Cuota</TableColumn>
+        <TableColumn>Número</TableColumn>
         <TableColumn>Monto</TableColumn>
         <TableColumn>Vencimiento</TableColumn>
         <TableColumn>Estado</TableColumn>
         <TableColumn>Pagos</TableColumn>
-        <TableColumn>Pendiente</TableColumn>
         <TableColumn>Acciones</TableColumn>
       </TableHeader>
-      <TableBody items={quotas}>
-        {(quota) => (
+      <TableBody>
+        {quotas.map((quota: any) => (
           <TableRow key={quota.id}>
             <TableCell>
-              <div className="flex items-center gap-2">
-                <span className="font-semibold">#{quota.number}</span>
-              </div>
+              <span className="font-medium">#{quota.number}</span>
             </TableCell>
             <TableCell>
-              <CurrencyDisplay amount={quota.amount} />
+              <span className="font-medium">
+                <CurrencyDisplay amount={quota.amount} />
+              </span>
             </TableCell>
             <TableCell>
               <DateDisplay date={quota.due_date} />
@@ -91,39 +63,65 @@ export function QuotasTable({
             <TableCell>
               <StatusChip status={quota.state} type="quota" data={quota} />
             </TableCell>
-            <TableCell>{renderPayments(quota)}</TableCell>
             <TableCell>
-              <CurrencyDisplay amount={calculatePendingAmount(quota)} />
+              {quota.payments && quota.payments.length > 0 ? (
+                <div className="space-y-1">
+                  {quota.payments.map((payment: any) => (
+                    <div
+                      key={payment.id}
+                      className="flex items-center gap-2 text-sm"
+                    >
+                      <LiaReceiptSolid className="text-success" />
+                      <CurrencyDisplay amount={payment.amount} size="sm" />
+                      <DateDisplay date={payment.date} className="text-xs" />
+                      <Tooltip content="Descargar comprobante">
+                        <span
+                          className="text-lg text-primary cursor-pointer active:opacity-50"
+                          onClick={() =>
+                            handleDownloadPaymentReceipt(payment.id)
+                          }
+                        >
+                          <LiaFileInvoiceDollarSolid />
+                        </span>
+                      </Tooltip>
+                      <Tooltip content="Eliminar pago">
+                        <span className="text-lg text-danger cursor-pointer active:opacity-50">
+                          <LiaTrashAltSolid
+                            onClick={() =>
+                              onDeletePayment?.(payment, quota)
+                            }
+                          />
+                        </span>
+                      </Tooltip>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <span className="text-default-500 text-sm">
+                  Sin pagos
+                </span>
+              )}
             </TableCell>
             <TableCell>
-              <div className="flex items-center gap-1">
-                <Tooltip content="Registrar pago">
-                  <Button
-                    isIconOnly
-                    size="sm"
-                    variant="light"
-                    color="success"
-                    onPress={() => onPaymentClick(quota)}
-                    isDisabled={quota.is_paid}
-                  >
-                    <LiaCreditCardSolid />
-                  </Button>
-                </Tooltip>
+              <div className="flex gap-2 justify-center">
+                {!quota.is_paid && (
+                  <Tooltip content="Realizar pago">
+                    <span className="text-lg text-success cursor-pointer active:opacity-50">
+                      <LiaReceiptSolid
+                        onClick={() => onPaymentClick(quota)}
+                      />
+                    </span>
+                  </Tooltip>
+                )}
                 <Tooltip content="Editar cuota">
-                  <Button
-                    isIconOnly
-                    size="sm"
-                    variant="light"
-                    color="warning"
-                    onPress={() => onEditQuota?.(quota)}
-                  >
-                    <LiaEditSolid />
-                  </Button>
+                  <span className="text-lg text-primary cursor-pointer active:opacity-50">
+                    <RiEditLine onClick={() => onEditQuota?.(quota)} />
+                  </span>
                 </Tooltip>
               </div>
             </TableCell>
           </TableRow>
-        )}
+        ))}
       </TableBody>
     </Table>
   );

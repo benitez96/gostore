@@ -1,116 +1,166 @@
-
 import { Button } from "@heroui/button";
-
+import { Chip } from "@heroui/chip";
 import { Divider } from "@heroui/divider";
 import { Link } from "react-router-dom";
+import { Tooltip } from "@heroui/tooltip";
 import {
   LiaUserSolid,
   LiaPhoneSolid,
   LiaEnvelopeSolid,
   LiaMapMarkerAltSolid,
   LiaArrowLeftSolid,
-  LiaUserEditSolid,
 } from "react-icons/lia";
-import { RiDeleteBinLine, RiShoppingBagLine } from "react-icons/ri";
+import { RiEditLine, RiDeleteBinLine } from "react-icons/ri";
 
-import { StatusChip } from "@/shared/components/ui";
 import { ClientDetail } from "@/api";
+
+const statusColorMap = {
+  1: "success",
+  2: "warning", 
+  3: "danger",
+} as const;
+
+const statusTextMap = {
+  1: "Al día",
+  2: "Advertencia",
+  3: "Deudor",
+} as const;
 
 export interface ClientHeaderProps {
   client: ClientDetail;
   onEdit: () => void;
   onDelete: () => void;
-  onCreateSale: () => void;
 }
 
-export function ClientHeader({ client, onEdit, onDelete, onCreateSale }: ClientHeaderProps) {
+export function ClientHeader({ client, onEdit, onDelete }: ClientHeaderProps) {
   return (
-    <div className="flex flex-col gap-4">
-      {/* Navigation */}
-      <div className="flex items-center gap-4">
-        <Button
-          as={Link}
-          to="/clientes"
-          variant="light"
-          startContent={<LiaArrowLeftSolid />}
-        >
-          Volver a Clientes
-        </Button>
-      </div>
-
-      {/* Client Info Card */}
-      <div className="bg-white rounded-lg border p-6">
-        <div className="flex justify-between items-start mb-4">
-          <div className="flex items-center gap-3">
-            <LiaUserSolid className="text-3xl text-primary" />
-            <div>
-              <h1 className="text-2xl font-bold">
-                {client.name} {client.lastname}
-              </h1>
-              <p className="text-default-600">DNI: {client.dni}</p>
-            </div>
-          </div>
-          
-          <div className="flex items-center gap-2">
-            <StatusChip status={client.state?.id || 1} type="client" />
-          </div>
-        </div>
-
-        <Divider className="my-4" />
-
-        {/* Contact Information */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-          <div className="flex items-center gap-2">
-            <LiaEnvelopeSolid className="text-lg text-default-400" />
-            <div>
-              <p className="text-sm text-default-600">Email</p>
-              <p className="font-medium">{client.email || "No especificado"}</p>
-            </div>
-          </div>
-          
-          <div className="flex items-center gap-2">
-            <LiaPhoneSolid className="text-lg text-default-400" />
-            <div>
-              <p className="text-sm text-default-600">Teléfono</p>
-              <p className="font-medium">{client.phone || "No especificado"}</p>
-            </div>
-          </div>
-          
-          <div className="flex items-center gap-2">
-            <LiaMapMarkerAltSolid className="text-lg text-default-400" />
-            <div>
-              <p className="text-sm text-default-600">Dirección</p>
-              <p className="font-medium">{client.address || "No especificada"}</p>
-            </div>
-          </div>
-        </div>
-
-        {/* Action Buttons */}
-        <div className="flex gap-2 pt-4">
-          <Button
+    <section className="flex flex-col gap-6">
+      {/* Header con título y navegación */}
+      <div className="flex items-center justify-between max-w-7xl w-full px-4">
+        <div className="flex items-center gap-3">
+          <Button 
+            as={Link} 
+            size="sm" 
+            to="/clientes" 
+            variant="flat"
             color="primary"
-            startContent={<RiShoppingBagLine />}
-            onPress={onCreateSale}
+            startContent={<LiaArrowLeftSolid />}
+            className="font-medium transition-all duration-200 hover:scale-105"
           >
-            Nueva Venta
+            Volver a clientes
           </Button>
-          <Button
-            variant="flat"
-            startContent={<LiaUserEditSolid />}
-            onPress={onEdit}
-          >
-            Editar Cliente
-          </Button>
-          <Button
-            color="danger"
-            variant="flat"
-            startContent={<RiDeleteBinLine />}
-            onPress={onDelete}
-          >
-            Eliminar Cliente
-          </Button>
+          <Divider orientation="vertical" />
+          <div className="p-3 bg-gradient-to-br from-primary-500 to-primary-600 rounded-xl">
+            <LiaUserSolid className="text-white text-2xl" />
+          </div>
+          <div>
+            <h1 className="text-3xl font-bold bg-gradient-to-r from-primary-600 to-secondary-600 bg-clip-text text-transparent">
+              Detalle del Cliente
+            </h1>
+            <p className="text-default-500">
+              Información completa y gestión del cliente
+            </p>
+          </div>
         </div>
       </div>
-    </div>
+
+      <div className="max-w-7xl w-full px-4">
+        {/* Información del cliente */}
+        <div className="bg-content1 border border-default-200 rounded-lg p-4 mb-4">
+          <div className="flex gap-3 mb-4">
+            <LiaUserSolid className="text-2xl text-primary" />
+            <div className="flex flex-col flex-1">
+              <p className="text-md font-semibold">
+                {client.name} {client.lastname}
+              </p>
+              <p className="text-small text-default-500">
+                Cliente #{client.id}
+              </p>
+            </div>
+            <div className="flex gap-2 items-center -mt-4">
+              <div className="flex gap-2 items-center">
+                <Tooltip content="Editar cliente">
+                  <Button
+                    isIconOnly
+                    size="sm"
+                    variant="flat"
+                    onPress={onEdit}
+                  >
+                    <RiEditLine />
+                  </Button>
+                </Tooltip>
+                <Tooltip content="Eliminar cliente">
+                  <Button
+                    isIconOnly
+                    color="danger"
+                    size="sm"
+                    variant="flat"
+                    onPress={onDelete}
+                  >
+                    <RiDeleteBinLine />
+                  </Button>
+                </Tooltip>
+              </div>
+              <Chip
+                className="capitalize"
+                color={
+                  statusColorMap[
+                    client.state?.id as keyof typeof statusColorMap
+                  ] || "default"
+                }
+                size="sm"
+                variant="flat"
+              >
+                {statusTextMap[
+                  client.state?.id as keyof typeof statusTextMap
+                ] || "Desconocido"}
+              </Chip>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Primera columna - 3 datos */}
+            <div className="flex items-center gap-3">
+              <LiaUserSolid className="text-lg text-default-500" />
+              <div>
+                <p className="text-sm text-default-500">DNI</p>
+                <p className="font-medium">{client.dni}</p>
+              </div>
+            </div>
+
+            {client.email && (
+              <div className="flex items-center gap-3">
+                <LiaEnvelopeSolid className="text-lg text-default-500" />
+                <div>
+                  <p className="text-sm text-default-500">Email</p>
+                  <p className="font-medium">{client.email}</p>
+                </div>
+              </div>
+            )}
+
+            {client.phone && (
+              <div className="flex items-center gap-3">
+                <LiaPhoneSolid className="text-lg text-default-500" />
+                <div>
+                  <p className="text-sm text-default-500">Teléfono</p>
+                  <p className="font-medium">{client.phone}</p>
+                </div>
+              </div>
+            )}
+
+            {/* Cuarta columna - 1 dato */}
+            {client.address && (
+              <div className="flex items-center gap-3">
+                <LiaMapMarkerAltSolid className="text-lg text-default-500" />
+                <div>
+                  <p className="text-sm text-default-500">Dirección</p>
+                  <p className="font-medium">{client.address}</p>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    </section>
   );
 } 

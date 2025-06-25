@@ -183,6 +183,26 @@ export const downloadSaleSheet = async (saleId: number) => {
   link.parentNode?.removeChild(link);
 };
 
+// Descargar comprobante de pago en PDF
+export const downloadPaymentReceipt = async (paymentId: string | number) => {
+  const response = await api.post(
+    "/api/pdf/generate-receipt",
+    { payment_id: paymentId },
+    { responseType: "blob" },
+  );
+  // Crear un enlace para descargar el archivo
+  const url = window.URL.createObjectURL(
+    new Blob([response.data], { type: "application/pdf" }),
+  );
+  const link = document.createElement("a");
+  link.href = url;
+  link.setAttribute("download", `comprobante_pago_${paymentId}.pdf`);
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  window.URL.revokeObjectURL(url);
+};
+
 // Descargar libro de ventas pendientes en PDF
 export const downloadSalesBook = async () => {
   const response = await api.get('/api/pdf/libro-ventas', {

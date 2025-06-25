@@ -6,18 +6,20 @@ import {
   ModalFooter,
 } from "@heroui/modal";
 import { Button } from "@heroui/button";
-import { RiAlertLine } from "react-icons/ri";
+import { LiaTrashAltSolid } from "react-icons/lia";
 
 export interface ConfirmModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onConfirm: () => void | Promise<void>;
+  onConfirm: () => void;
   title: string;
   message: string;
   confirmText?: string;
   cancelText?: string;
   isLoading?: boolean;
-  color?: "default" | "primary" | "secondary" | "success" | "warning" | "danger";
+  entityInfo?: Record<string, string>;
+  impactList?: string[];
+  isDangerous?: boolean;
 }
 
 export function ConfirmModal({
@@ -29,42 +31,69 @@ export function ConfirmModal({
   confirmText = "Confirmar",
   cancelText = "Cancelar",
   isLoading = false,
-  color = "danger",
+  entityInfo,
+  impactList,
+  isDangerous = false,
 }: ConfirmModalProps) {
-  const handleConfirm = async () => {
-    try {
-      await onConfirm();
-      onClose();
-    } catch (error) {
-      // Don't close modal on error, let parent handle it
-      console.error("Confirm action error:", error);
-    }
-  };
-
   return (
-    <Modal isOpen={isOpen} size="md" onClose={onClose} isDismissable={!isLoading}>
+    <Modal isOpen={isOpen} size="md" onClose={onClose}>
       <ModalContent>
         <ModalHeader className="flex flex-col gap-1">
           <div className="flex items-center gap-2">
-            <RiAlertLine className={`text-2xl text-${color}`} />
+            <LiaTrashAltSolid className="text-2xl text-danger" />
             <span>{title}</span>
           </div>
         </ModalHeader>
         <ModalBody>
-          <p className="text-default-600">{message}</p>
+          <div className="space-y-4">
+            {/* Confirmation message */}
+            <div className={`p-4 rounded-lg ${isDangerous ? 'bg-danger-50' : 'bg-warning-50'}`}>
+              <h4 className={`font-medium mb-2 ${isDangerous ? 'text-danger' : 'text-warning'}`}>
+                Confirmar {isDangerous ? 'Eliminación' : 'Acción'}
+              </h4>
+              <p className="text-sm text-default-600">
+                {message}
+              </p>
+            </div>
+
+            {/* Entity information */}
+            {entityInfo && (
+              <div className="p-4 bg-default-50 rounded-lg">
+                <h4 className="font-medium mb-2">Información del Elemento</h4>
+                <div className="grid grid-cols-2 gap-4 text-sm">
+                  {Object.entries(entityInfo).map(([key, value]) => (
+                    <div key={key}>
+                      <p className="text-default-500">{key}:</p>
+                      <p className="font-medium">{value}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Impact information */}
+            {impactList && impactList.length > 0 && (
+              <div className="p-4 bg-warning-50 rounded-lg">
+                <h4 className="font-medium mb-2 text-warning">
+                  Impacto de la {isDangerous ? 'Eliminación' : 'Acción'}
+                </h4>
+                <div className="space-y-2 text-sm">
+                  {impactList.map((impact, index) => (
+                    <p key={index}>• {impact}</p>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
         </ModalBody>
         <ModalFooter>
-          <Button
-            variant="light"
-            onPress={onClose}
-            isDisabled={isLoading}
-          >
+          <Button variant="light" onPress={onClose}>
             {cancelText}
           </Button>
           <Button
-            color={color}
-            onPress={handleConfirm}
+            color={isDangerous ? "danger" : "warning"}
             isLoading={isLoading}
+            onPress={onConfirm}
           >
             {confirmText}
           </Button>
