@@ -2,10 +2,12 @@ import { useState, useEffect } from "react";
 import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter } from "@heroui/modal";
 import { Button } from "@heroui/button";
 import { Input } from "@heroui/input";
+import { Form } from "@heroui/form";
 import { RiShoppingBagLine } from "react-icons/ri";
 
 import { useToast } from "@/shared/hooks/useToast";
 import { formatCurrency } from "@/shared/utils/formatters";
+import { CurrencyInput } from "@/shared/components/ui";
 
 export interface ProductFormData {
   name: string;
@@ -22,6 +24,7 @@ export interface ProductFormProps {
   title: string;
   submitText: string;
   isLoading?: boolean;
+  validationErrors?: Record<string, string>;
 }
 
 export function ProductForm({
@@ -32,6 +35,7 @@ export function ProductForm({
   title,
   submitText,
   isLoading,
+  validationErrors,
 }: ProductFormProps) {
   const { showApiError } = useToast();
   
@@ -41,6 +45,8 @@ export function ProductForm({
     price: 0,
     stock: 0,
   });
+
+
 
   useEffect(() => {
     if (initialData) {
@@ -60,17 +66,8 @@ export function ProductForm({
     }
   }, [initialData, isOpen]);
 
-  const handleSubmit = () => {
-    if (!formData.name.trim()) {
-      showApiError("Error", "El nombre del producto es requerido");
-      return;
-    }
-
-    if (formData.cost < 0 || formData.price < 0 || formData.stock < 0) {
-      showApiError("Error", "Los valores no pueden ser negativos");
-      return;
-    }
-
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
     onSubmit(formData);
   };
 
@@ -83,6 +80,42 @@ export function ProductForm({
     }
   };
 
+  const handleCurrencyChange = (field: 'cost' | 'price', value: number | undefined) => {
+    const numValue = value || 0;
+    
+    if (field === 'cost') {
+      // SIEMPRE auto-calcular precio cuando cambia el costo
+      const suggestedPrice = Math.round((numValue / 0.7) * 100) / 100;
+      setFormData(prev => ({ 
+        ...prev, 
+        cost: numValue,
+        price: suggestedPrice
+      }));
+    } else {
+      // Solo cambiar precio
+      setFormData(prev => ({ ...prev, price: numValue }));
+    }
+  };
+
+  // Check if form is valid for button state
+  const isFormValid = 
+    formData.name.trim().length >= 2 &&
+    formData.cost >= 0 &&
+    formData.price >= 0 &&
+    formData.stock >= 0 &&
+    Number.isInteger(formData.stock);
+
+  // Custom validation for product name
+  const validateProductName = (value: string) => {
+    if (!value.trim()) {
+      return "El nombre del producto es requerido";
+    }
+    if (value.length < 2) {
+      return "El nombre debe tener al menos 2 caracteres";
+    }
+    return null;
+  };
+
   return (
     <Modal isOpen={isOpen} size="2xl" onClose={onClose}>
       <ModalContent>
@@ -93,92 +126,93 @@ export function ProductForm({
           </div>
         </ModalHeader>
         <ModalBody>
-          <div className="flex flex-col gap-4">
-            <Input
-              isRequired
-              label="Nombre del producto"
-              placeholder="Ingresa el nombre del producto"
-              value={formData.name}
-              onChange={(e) => handleInputChange('name', e.target.value)}
-            />
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <Form
+            onSubmit={handleSubmit}
+            validationErrors={validationErrors}
+            validationBehavior="native"
+          >
+            <div className="flex flex-col gap-4 w-full">
               <Input
+                name="name"
                 isRequired
-                label="Costo"
-                placeholder="0.00"
-                type="number"
-                min="0"
-                step="0.01"
-                value={formData.cost.toString()}
-                onChange={(e) => handleInputChange('cost', e.target.value)}
-                startContent={
-                  <div className="pointer-events-none flex items-center">
-                    <span className="text-default-400 text-small">$</span>
-                  </div>
-                }
+                label="Nombre del producto"
+                placeholder="Ingresa el nombre del producto"
+                value={formData.name}
+                onChange={(e) => handleInputChange('name', e.target.value)}
+                validate={validateProductName}
+                minLength={2}
               />
               
+              <div className="grid grid-cols-2 gap-4">
+                <CurrencyInput
+                  name="cost"
+                  isRequired
+                  label="Costo"
+                  placeholder="0.00"
+                  value={formData.cost}
+                  onValueChange={(value) => handleCurrencyChange('cost', value)}
+                  min={0}
+                />
+                
+                <CurrencyInput
+                  name="price"
+                  isRequired
+                  label="Precio de venta"
+                  placeholder="0.00"
+                  value={formData.price}
+                  onValueChange={(value) => handleCurrencyChange('price', value)}
+                  min={0}
+                />
+              </div>
+              
               <Input
+                name="stock"
                 isRequired
-                label="Precio de venta"
-                placeholder="0.00"
+                label="Stock inicial"
+                placeholder="0"
                 type="number"
                 min="0"
-                step="0.01"
-                value={formData.price.toString()}
-                onChange={(e) => handleInputChange('price', e.target.value)}
-                startContent={
-                  <div className="pointer-events-none flex items-center">
-                    <span className="text-default-400 text-small">$</span>
-                  </div>
-                }
+                step="1"
+                value={formData.stock.toString()}
+                onChange={(e) => handleInputChange('stock', e.target.value)}
               />
-            </div>
-            
-            <Input
-              isRequired
-              label="Stock inicial"
-              placeholder="0"
-              type="number"
-              min="0"
-              value={formData.stock.toString()}
-              onChange={(e) => handleInputChange('stock', e.target.value)}
-            />
-            
-            {/* Profit Margin Preview */}
-            {formData.cost > 0 && formData.price > 0 && (
-              <div className="p-4 bg-default-50 rounded-lg">
-                <div className="grid grid-cols-2 gap-4 text-sm">
-                  <div>
-                    <span className="text-default-600">Ganancia:</span>
-                    <p className={`font-semibold ${formData.price - formData.cost >= 0 ? 'text-success' : 'text-danger'}`}>
-                      {formatCurrency(formData.price - formData.cost)}
-                    </p>
-                  </div>
-                  <div>
-                    <span className="text-default-600">Margen:</span>
-                    <p className="font-semibold">
-                      {((formData.price - formData.cost) / formData.price * 100).toFixed(1)}%
-                    </p>
+              
+              {/* Profit Margin Preview */}
+              {formData.cost > 0 && formData.price > 0 && (
+                <div className="p-4 bg-default-50 rounded-lg">
+                  <div className="grid grid-cols-2 gap-4 text-sm">
+                    <div>
+                      <span className="text-default-600">Ganancia:</span>
+                      <p className={`font-semibold ${formData.price - formData.cost >= 0 ? 'text-success' : 'text-danger'}`}>
+                        {formatCurrency(formData.price - formData.cost)}
+                      </p>
+                    </div>
+                    <div>
+                      <span className="text-default-600">Margen:</span>
+                      <p className="font-semibold">
+                        {((formData.price - formData.cost) / formData.price * 100).toFixed(1)}%
+                      </p>
+                    </div>
                   </div>
                 </div>
-              </div>
-            )}
-          </div>
+              )}
+            </div>
+            
+            <ModalFooter className="flex justify-end gap-2 w-full">
+              <Button variant="light" onPress={onClose}>
+                Cancelar
+              </Button>
+              <Button
+                color="primary"
+                isLoading={isLoading}
+                isDisabled={!isFormValid}
+                type="submit"
+              >
+                {submitText}
+              </Button>
+            </ModalFooter>
+          </Form>
         </ModalBody>
-        <ModalFooter>
-          <Button variant="light" onPress={onClose}>
-            Cancelar
-          </Button>
-          <Button
-            color="primary"
-            isLoading={isLoading}
-            onPress={handleSubmit}
-          >
-            {submitText}
-          </Button>
-        </ModalFooter>
       </ModalContent>
     </Modal>
   );
