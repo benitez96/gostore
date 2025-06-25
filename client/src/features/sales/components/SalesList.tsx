@@ -2,6 +2,7 @@ import { Accordion, AccordionItem } from "@heroui/accordion";
 import { Button } from "@heroui/button";
 import { Tooltip } from "@heroui/tooltip";
 import { LiaFileInvoiceDollarSolid, LiaTrashAltSolid, LiaDownloadSolid } from "react-icons/lia";
+import { useState } from "react";
 
 import { SaleDetail } from "@/features/sales/components/SaleDetail";
 import { CurrencyDisplay, DateDisplay, StatusChip } from "@/shared/components/ui";
@@ -27,6 +28,23 @@ export function SalesList({
   onPaymentClick,
   onDeletePayment,
 }: SalesListProps) {
+  const [downloadingIds, setDownloadingIds] = useState<Set<string>>(new Set());
+
+  const handleDownloadSheet = async (saleId: string) => {
+    setDownloadingIds(prev => new Set(prev).add(saleId));
+    try {
+      await onDownloadSheet(saleId);
+    } catch (error) {
+      // Error handling is done by the parent component
+      console.error('Error downloading sheet:', error);
+    } finally {
+      setDownloadingIds(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(saleId);
+        return newSet;
+      });
+    }
+  };
   if (!sales || sales.length === 0) {
     return (
       <div className="text-center py-8 text-default-500">
@@ -64,13 +82,19 @@ export function SalesList({
                 </div>
                 <div className="flex items-center gap-2">
                   <StatusChip status={sale.state} type="sale" data={sale} />
-                  <Tooltip content="Descargar ficha de venta">
+                  <Tooltip content={
+                    downloadingIds.has(sale.id.toString()) 
+                      ? "Generando ficha..." 
+                      : "Descargar ficha de venta"
+                  }>
                     <Button
                       isIconOnly
                       size="sm"
                       variant="flat"
                       color="primary"
-                      onPress={() => onDownloadSheet(sale.id.toString())}
+                      isLoading={downloadingIds.has(sale.id.toString())}
+                      isDisabled={downloadingIds.has(sale.id.toString())}
+                      onPress={() => handleDownloadSheet(sale.id.toString())}
                     >
                       <LiaFileInvoiceDollarSolid />
                     </Button>

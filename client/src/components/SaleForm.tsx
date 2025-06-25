@@ -9,6 +9,7 @@ import {
 } from "@heroui/modal";
 import { Button } from "@heroui/button";
 import { Input } from "@heroui/input";
+import { Form } from "@heroui/form";
 
 import { Autocomplete, AutocompleteItem } from "@heroui/autocomplete";
 import { DatePicker } from "@heroui/date-picker";
@@ -44,12 +45,20 @@ import {
   CreateSaleDto,
 } from "../types";
 import { formatCurrency } from "@/shared/utils/formatters";
+import { CurrencyInput } from "@/shared/components/ui";
 
 interface SaleFormProps {
   isOpen: boolean;
   onClose: () => void;
   clientId: string;
   clientName: string;
+}
+
+interface SaleFormState {
+  date: string;
+  quotas: number;
+  quota_price: number;
+  products: SaleFormProduct[];
 }
 
 export default function SaleForm({
@@ -59,10 +68,10 @@ export default function SaleForm({
   clientName,
 }: SaleFormProps) {
   const queryClient = useQueryClient();
-  const [formData, setFormData] = useState<SaleFormData>({
+  const [formData, setFormData] = useState<SaleFormState>({
     date: new Date().toISOString().split("T")[0],
     quotas: 1,
-    quota_price: "",
+    quota_price: 0,
     products: [],
   });
 
@@ -129,7 +138,7 @@ export default function SaleForm({
     setFormData({
       date: new Date().toISOString().split("T")[0],
       quotas: 1,
-      quota_price: "",
+      quota_price: 0,
       products: [],
     });
     setSelectedProductId("");
@@ -298,7 +307,7 @@ export default function SaleForm({
           ? Math.round((total / formData.quotas) * 100) / 100
           : 0;
 
-      setFormData((prev) => ({ ...prev, quota_price: newQuotaPrice.toString() }));
+      setFormData((prev) => ({ ...prev, quota_price: newQuotaPrice }));
     }
   }, [formData.products, formData.quotas, isQuotaPriceManuallyEdited]);
 
@@ -313,8 +322,8 @@ export default function SaleForm({
       return;
     }
 
-    // Convertir quota_price de string a number para la API
-    const quotaPriceNumber = parseFloat(formData.quota_price.replace(",", ".")) || 0;
+    // Usar quota_price como number
+    const quotaPriceNumber = formData.quota_price || 0;
     const totalSale = quotaPriceNumber * formData.quotas;
 
     const saleData: CreateSaleDto = {
@@ -338,8 +347,8 @@ export default function SaleForm({
 
 
   const productsTotal = calculateTotal();
-  // Convertir quota_price de string a number para cálculos
-  const quotaPriceNumber = parseFloat(formData.quota_price.replace(",", ".")) || 0;
+  // Usar quota_price como number para cálculos
+  const quotaPriceNumber = formData.quota_price || 0;
   const totalSale = quotaPriceNumber * formData.quotas;
   const interestAmount = totalSale - productsTotal;
   const interestPercentage =
@@ -365,11 +374,9 @@ export default function SaleForm({
             {/* Información básica */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
-                <label htmlFor="sale-date" className="text-sm font-medium text-default-700 mb-2 block">
-                  Fecha
-                </label>
                 <DatePicker
-                  id="sale-date"
+                  label="Fecha"
+                  labelPlacement="outside"
                   startContent={
                     <LiaCalendarAltSolid className="text-default-400" />
                   }
@@ -391,11 +398,9 @@ export default function SaleForm({
               </div>
 
               <div>
-                <label htmlFor="sale-quotas" className="text-sm font-medium text-default-700 mb-2 block">
-                  Número de Cuotas
-                </label>
                 <Input
-                  id="sale-quotas"
+                  label="Número de cuotas"
+                  labelPlacement="outside"
                   min="1"
                   type="number"
                   placeholder="1"
@@ -412,35 +417,20 @@ export default function SaleForm({
               </div>
 
               <div>
-                <label htmlFor="sale-quota-price" className="text-sm font-medium text-default-700 mb-2 block">
-                  Precio por Cuota
-                </label>
-                <Input
-                  id="sale-quota-price"
-                  min="0"
-                  step="0.01"
-                  type="number"
-                  isClearable
-                  startContent={
-                    <div className="pointer-events-none flex items-center">
-                      <span className="text-default-400 text-small">$</span>
-                    </div>
-                  }
+                <CurrencyInput
+                  label="Precio de la cuota"
+                  labelPlacement="outside"
                   value={formData.quota_price}
-                  onChange={e => {
+                  onValueChange={(value) => {
                     setIsQuotaPriceManuallyEdited(true);
                     setFormData({
                       ...formData,
-                      quota_price: e.target.value,
-                    });
-                  }}
-                  onClear={() => {
-                    setFormData({
-                      ...formData,
-                      quota_price: "",
+                      quota_price: value || 0,
                     });
                   }}
                   placeholder="0.00"
+                  isClearable
+                  min={0}
                 />
               </div>
             </div>
@@ -471,7 +461,7 @@ export default function SaleForm({
 
               {isManualMode ? (
                 // Formulario para producto manual
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4 items-end">
                   <Input
                     label="Nombre del producto"
                     labelPlacement="outside"
@@ -484,45 +474,33 @@ export default function SaleForm({
                       })
                     }
                   />
-                  <Input
+                  <CurrencyInput
                     label="Costo"
                     labelPlacement="outside"
-                    min="0"
                     placeholder="0.00"
-                    startContent={
-                      <div className="pointer-events-none flex items-center">
-                        <span className="text-default-400 text-small">$</span>
-                      </div>
-                    }
-                    step="0.01"
-                    type="number"
-                    value={manualProduct.cost.toString()}
-                    onChange={(e) =>
+                    value={manualProduct.cost}
+                    onValueChange={(value) =>
                       setManualProduct({
                         ...manualProduct,
-                        cost: parseFloat(e.target.value) || 0,
+                        cost: value || 0,
                       })
                     }
+                    min={0}
+                    isClearable
                   />
-                  <Input
+                  <CurrencyInput
                     label="Precio"
                     labelPlacement="outside"
-                    min="0"
                     placeholder="0.00"
-                    startContent={
-                      <div className="pointer-events-none flex items-center">
-                        <span className="text-default-400 text-small">$</span>
-                      </div>
-                    }
-                    step="0.01"
-                    type="number"
-                    value={manualProduct.price.toString()}
-                    onChange={(e) =>
+                    value={manualProduct.price}
+                    onValueChange={(value) =>
                       setManualProduct({
                         ...manualProduct,
-                        price: parseFloat(e.target.value) || 0,
+                        price: value || 0,
                       })
                     }
+                    min={0}
+                    isClearable
                   />
                   <Input
                     label="Cantidad"
@@ -690,49 +668,36 @@ export default function SaleForm({
                           />
                         </TableCell>
                         <TableCell>
-                          <Input
-                            className="w-24"
-                            min="0"
-                            placeholder="0.00"
-                            startContent={
-                              <div className="pointer-events-none flex items-center">
-                                <span className="text-default-400 text-small">
-                                  $
-                                </span>
+                          <div className={isCostVisible ? "" : "relative"}>
+                            <CurrencyInput
+                              value={product.cost}
+                              onValueChange={(value) =>
+                                updateProductCost(
+                                  product.product_id,
+                                  value || 0,
+                                )
+                              }
+                              placeholder="0.00"
+                              min={0}
+                            />
+                            {!isCostVisible && (
+                              <div className="absolute inset-0 bg-default-100 rounded-medium flex items-center justify-center">
+                                <span className="text-default-400 text-xs">****</span>
                               </div>
-                            }
-                            step="1"
-                            type={isCostVisible ? "number" : "password"}
-                            value={product.cost.toString()}
-                            onChange={(e) =>
-                              updateProductCost(
-                                product.product_id,
-                                parseFloat(e.target.value) || 0,
-                              )
-                            }
-                          />
+                            )}
+                          </div>
                         </TableCell>
                         <TableCell>
-                          <Input
-                            className="w-24"
-                            min="0"
-                            placeholder="0.00"
-                            startContent={
-                              <div className="pointer-events-none flex items-center">
-                                <span className="text-default-400 text-small">
-                                  $
-                                </span>
-                              </div>
-                            }
-                            step="1"
-                            type="number"
-                            value={product.price.toString()}
-                            onChange={(e) =>
+                          <CurrencyInput
+                            value={product.price}
+                            onValueChange={(value) =>
                               updateProductPrice(
                                 product.product_id,
-                                parseFloat(e.target.value) || 0,
+                                value || 0,
                               )
                             }
+                            placeholder="0.00"
+                            min={0}
                           />
                         </TableCell>
                         <TableCell>

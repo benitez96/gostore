@@ -3,42 +3,28 @@ import { useNavigate } from "react-router-dom";
 import {
   RiUserLine,
   RiSearchLine,
-  RiEyeLine,
-  RiEditLine,
-  RiDeleteBinLine,
   RiArrowDownSLine,
 } from "react-icons/ri";
 import { IoPersonAddOutline } from "react-icons/io5";
 import { LiaUserEditSolid } from "react-icons/lia";
 import { Input } from "@heroui/input";
 import { Button } from "@heroui/button";
-import { Spinner } from "@heroui/spinner";
-import { Tooltip } from "@heroui/tooltip";
-import { Chip } from "@heroui/chip";
 import {
   Dropdown,
   DropdownTrigger,
   DropdownMenu,
   DropdownItem,
 } from "@heroui/dropdown";
-import {
-  Table,
-  TableHeader,
-  TableColumn,
-  TableBody,
-  TableRow,
-  TableCell,
-} from "@heroui/table";
 
 import { Client, ClientDetail, clientsApi } from "@/api";
 import ClientForm from "@/components/ClientForm";
 import ConfirmModal from "@/components/ConfirmModal";
 import DefaultLayout from "@/layouts/default";
 import { useToast } from "@/shared/hooks/useToast";
-import { statusColorMap, statusTextMap, statusOptions } from "@/shared/utils/constants";
-import { capitalize } from "@/shared/utils/formatters";
+import { statusTextMap, statusOptions } from "@/shared/utils/constants";
 
 import { useClients } from "../hooks/useClients";
+import { ClientsTable } from "../components/ClientsTable";
 
 export default function ClientsPage() {
   const navigate = useNavigate();
@@ -169,64 +155,7 @@ export default function ClientsPage() {
     setDeletingClient(null);
   };
 
-  const columns = [
-    { name: "NOMBRE", uid: "name" },
-    { name: "DNI", uid: "dni" },
-    { name: "ESTADO", uid: "state" },
-    { name: "ACCIONES", uid: "actions" },
-  ];
 
-  const renderCell = (client: Client, columnKey: React.Key) => {
-    const cellValue = client[columnKey as keyof Client];
-
-    switch (columnKey) {
-      case "name":
-        return (
-          <div className="text-sm font-medium text-default-900">
-            {client.name} {client.lastname}
-          </div>
-        );
-      case "dni":
-        return <div className="text-sm text-default-900">{client.dni}</div>;
-      case "state":
-        return (
-          <Chip
-            className="capitalize"
-            color={
-              statusColorMap[client.state?.id as keyof typeof statusColorMap] ||
-              "default"
-            }
-            size="sm"
-            variant="flat"
-          >
-            {statusTextMap[client.state?.id as keyof typeof statusTextMap] ||
-              "Desconocido"}
-          </Chip>
-        );
-      case "actions":
-        return (
-          <div className="flex gap-2 justify-center">
-            <Tooltip content="Ver detalles">
-              <span className="text-lg text-default-400 cursor-pointer active:opacity-50">
-                <RiEyeLine onClick={() => handleViewClient(client)} />
-              </span>
-            </Tooltip>
-            <Tooltip content="Editar">
-              <span className="text-lg text-default-400 cursor-pointer active:opacity-50">
-                <RiEditLine onClick={() => handleEditClient(client)} />
-              </span>
-            </Tooltip>
-            <Tooltip content="Eliminar">
-              <span className="text-lg text-danger cursor-pointer active:opacity-50">
-                <RiDeleteBinLine onClick={() => handleDeleteClient(client)} />
-              </span>
-            </Tooltip>
-          </div>
-        );
-      default:
-        return typeof cellValue === "object" ? "" : cellValue;
-    }
-  };
 
   return (
     <DefaultLayout>
@@ -263,6 +192,7 @@ export default function ClientsPage() {
             <div className="flex gap-3 items-end">
               <Input
                 isClearable
+                onClear={() => handleSearchChange("")}
                 className="w-full sm:max-w-[44%]"
                 placeholder="Buscar por nombre, apellido o DNI..."
                 startContent={<RiSearchLine className="text-default-400" />}
@@ -306,57 +236,17 @@ export default function ClientsPage() {
             </div>
           </div>
 
-          {/* HeroUI Table with Infinite Scroll */}
-          <Table
-            isHeaderSticky
-            aria-label="Tabla de clientes"
-            baseRef={scrollerRef}
-            bottomContent={
-              hasMore ? (
-                <div className="flex w-full justify-center">
-                  <Spinner
-                    ref={loaderRef}
-                    classNames={{ label: "text-foreground mt-4" }}
-                    variant="wave"
-                  />
-                </div>
-              ) : null
-            }
-            classNames={{
-              base: "max-h-[calc(100dvh-250px)] overflow-hidden",
-              td: "py-4",
-            }}
-          >
-            <TableHeader columns={columns}>
-              {(column) => (
-                <TableColumn
-                  key={column.uid}
-                  align={column.uid === "actions" ? "center" : "start"}
-                >
-                  {column.name}
-                </TableColumn>
-              )}
-            </TableHeader>
-            <TableBody
-              emptyContent="No se encontraron clientes"
-              isLoading={isLoading}
-              items={clients}
-              loadingContent={
-                <Spinner
-                  classNames={{ label: "text-foreground mt-4" }}
-                  variant="wave"
-                />
-              }
-            >
-              {(item: Client) => (
-                <TableRow key={item.id}>
-                  {(columnKey) => (
-                    <TableCell>{renderCell(item, columnKey)}</TableCell>
-                  )}
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
+          {/* Tabla de clientes */}
+          <ClientsTable
+            clients={clients}
+            isLoading={isLoading}
+            hasMore={hasMore}
+            loaderRef={loaderRef}
+            scrollerRef={scrollerRef}
+            onEdit={handleEditClient}
+            onDelete={handleDeleteClient}
+            onView={handleViewClient}
+          />
         </div>
 
         {/* Client Form Modal */}

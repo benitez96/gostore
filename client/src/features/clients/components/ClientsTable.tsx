@@ -1,89 +1,165 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
-import { DataTable, TableColumn, createViewAction, createEditAction, createDeleteAction } from "@/shared/components/ui";
-import { StatusChip } from "@/shared/components/ui";
+import {
+  RiEyeLine,
+  RiEditLine,
+  RiDeleteBinLine,
+} from "react-icons/ri";
+import { Tooltip } from "@heroui/tooltip";
+import { Chip } from "@heroui/chip";
+import { Spinner } from "@heroui/spinner";
+import {
+  Table,
+  TableHeader,
+  TableColumn,
+  TableBody,
+  TableRow,
+  TableCell,
+} from "@heroui/table";
+
 import { Client } from "@/api";
+import { statusColorMap, statusTextMap } from "@/shared/utils/constants";
 
 export interface ClientsTableProps {
   clients: Client[];
   isLoading?: boolean;
+  hasMore?: boolean;
+  loaderRef?: React.RefObject<HTMLDivElement>;
+  scrollerRef?: React.RefObject<HTMLDivElement>;
   onEdit: (client: Client) => void;
   onDelete: (client: Client) => void;
-  bottomContent?: React.ReactNode;
-  topContent?: React.ReactNode;
+  onView?: (client: Client) => void;
 }
 
 export function ClientsTable({
   clients,
   isLoading = false,
+  hasMore = false,
+  loaderRef,
+  scrollerRef,
   onEdit,
   onDelete,
-  bottomContent,
-  topContent,
+  onView,
 }: ClientsTableProps) {
   const navigate = useNavigate();
 
-  const handleView = (client: Client) => {
-    navigate(`/cliente/${client.id}`);
+  const handleViewClient = (client: Client) => {
+    if (onView) {
+      onView(client);
+    } else {
+      navigate(`/clientes/${client.id}`);
+    }
   };
 
-  const columns: TableColumn<Client>[] = [
-    {
-      key: "name",
-      label: "Nombre",
-      sortable: true,
-      render: (client: Client) => (
-        <div className="flex flex-col">
-          <p className="text-bold text-sm capitalize">
-            {client.name} {client.lastname}
-          </p>
-          <p className="text-bold text-sm capitalize text-default-400">
-            DNI: {client.dni}
-          </p>
-        </div>
-      ),
-    },
-    {
-      key: "dni",
-      label: "DNI",
-      render: (client: Client) => (
-        <p className="text-sm font-mono">{client.dni}</p>
-      ),
-    },
-    {
-      key: "state",
-      label: "Estado",
-      render: (client: Client) => (
-        <StatusChip status={client.state?.id || 1} type="client" />
-      ),
-    },
-    {
-      key: "id",
-      label: "ID",
-      render: (client: Client) => (
-        <span className="text-sm font-mono text-default-500">
-          #{client.id}
-        </span>
-      ),
-    },
+  const columns = [
+    { name: "NOMBRE", uid: "name" },
+    { name: "DNI", uid: "dni" },
+    { name: "ESTADO", uid: "state" },
+    { name: "ACCIONES", uid: "actions" },
   ];
 
-  const actions = [
-    createViewAction(handleView),
-    createEditAction(onEdit),
-    createDeleteAction(onDelete),
-  ];
+  const renderCell = (client: Client, columnKey: React.Key) => {
+    const cellValue = client[columnKey as keyof Client];
+
+    switch (columnKey) {
+      case "name":
+        return (
+          <div className="text-sm font-medium text-default-900">
+            {client.name} {client.lastname}
+          </div>
+        );
+      case "dni":
+        return <div className="text-sm text-default-900">{client.dni}</div>;
+      case "state":
+        return (
+          <Chip
+            className="capitalize"
+            color={
+              statusColorMap[client.state?.id as keyof typeof statusColorMap] ||
+              "default"
+            }
+            size="sm"
+            variant="flat"
+          >
+            {statusTextMap[client.state?.id as keyof typeof statusTextMap] ||
+              "Desconocido"}
+          </Chip>
+        );
+      case "actions":
+        return (
+          <div className="flex gap-2 justify-center">
+            <Tooltip content="Ver detalles">
+              <span className="text-lg text-default-400 cursor-pointer active:opacity-50">
+                <RiEyeLine onClick={() => handleViewClient(client)} />
+              </span>
+            </Tooltip>
+            <Tooltip content="Editar">
+              <span className="text-lg text-default-400 cursor-pointer active:opacity-50">
+                <RiEditLine onClick={() => onEdit(client)} />
+              </span>
+            </Tooltip>
+            <Tooltip content="Eliminar">
+              <span className="text-lg text-danger cursor-pointer active:opacity-50">
+                <RiDeleteBinLine onClick={() => onDelete(client)} />
+              </span>
+            </Tooltip>
+          </div>
+        );
+      default:
+        return typeof cellValue === "object" ? "" : cellValue;
+    }
+  };
 
   return (
-    <DataTable
-      data={clients}
-      columns={columns}
-      actions={actions}
-      isLoading={isLoading}
-      emptyContent="No se encontraron clientes"
-      getRowKey={(client) => client.id.toString()}
-      topContent={topContent}
-      bottomContent={bottomContent}
-    />
+    <Table
+      isHeaderSticky
+      aria-label="Tabla de clientes"
+      baseRef={scrollerRef}
+      bottomContent={
+        hasMore ? (
+          <div className="flex w-full justify-center">
+            <Spinner
+              ref={loaderRef}
+              classNames={{ label: "text-foreground mt-4" }}
+              variant="wave"
+            />
+          </div>
+        ) : null
+      }
+      classNames={{
+        base: "max-h-[calc(100dvh-250px)] overflow-hidden",
+        td: "py-4",
+      }}
+    >
+      <TableHeader columns={columns}>
+        {(column) => (
+          <TableColumn
+            key={column.uid}
+            align={column.uid === "actions" ? "center" : "start"}
+          >
+            {column.name}
+          </TableColumn>
+        )}
+      </TableHeader>
+      <TableBody
+        emptyContent="No se encontraron clientes"
+        isLoading={isLoading}
+        items={clients}
+        loadingContent={
+          <Spinner
+            classNames={{ label: "text-foreground mt-4" }}
+            variant="wave"
+          />
+        }
+      >
+        {(item: Client) => (
+          <TableRow key={item.id}>
+            {(columnKey) => (
+              <TableCell>{renderCell(item, columnKey)}</TableCell>
+            )}
+          </TableRow>
+        )}
+      </TableBody>
+    </Table>
   );
 } 

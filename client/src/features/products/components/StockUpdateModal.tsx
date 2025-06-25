@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter } from "@heroui/modal";
 import { Button } from "@heroui/button";
 import { Input } from "@heroui/input";
+import { Form } from "@heroui/form";
 import { RiRefreshLine } from "react-icons/ri";
 
 import { useToast } from "@/shared/hooks/useToast";
@@ -17,6 +18,7 @@ export interface StockUpdateModalProps {
   onSubmit: (data: StockUpdateData) => Promise<void>;
   product?: Product | null;
   isLoading?: boolean;
+  validationErrors?: Record<string, string>;
 }
 
 export function StockUpdateModal({
@@ -25,6 +27,7 @@ export function StockUpdateModal({
   onSubmit,
   product,
   isLoading,
+  validationErrors,
 }: StockUpdateModalProps) {
   const { showApiError } = useToast();
   const [stock, setStock] = useState(0);
@@ -35,7 +38,9 @@ export function StockUpdateModal({
     }
   }, [product, isOpen]);
 
-  const handleSubmit = () => {
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    
     if (stock < 0) {
       showApiError("Error", "El stock no puede ser negativo");
       return;
@@ -43,6 +48,21 @@ export function StockUpdateModal({
 
     onSubmit({ stock });
   };
+
+  // Custom validation for stock
+  const validateStock = (value: string) => {
+    const numValue = parseInt(value);
+    if (isNaN(numValue)) {
+      return "El stock debe ser un número válido";
+    }
+    if (numValue < 0) {
+      return "El stock no puede ser negativo";
+    }
+    return null;
+  };
+
+  // Check if form is valid for button state
+  const isFormValid = stock >= 0 && Number.isInteger(stock);
 
   return (
     <Modal isOpen={isOpen} size="md" onClose={onClose}>
@@ -54,33 +74,48 @@ export function StockUpdateModal({
           </div>
         </ModalHeader>
         <ModalBody>
-          <div className="flex flex-col gap-4">
-            <div className="text-sm text-default-600">
-              Producto: <span className="font-medium">{product?.name}</span>
+          <Form
+            onSubmit={handleSubmit}
+            validationErrors={validationErrors}
+            validationBehavior="native"
+          >
+            <div className="w-full flex flex-col gap-4">
+              <div className="text-sm text-default-600">
+                Producto: <span className="font-medium">{product?.name}</span>
+              </div>
+              <div className="text-sm text-default-500">
+                Stock actual: <span className="font-medium">{product?.stock} unidades</span>
+              </div>
+              <Input
+                name="stock"
+                isRequired
+                label="Nuevo stock"
+                labelPlacement="outside"
+                min="0"
+                step="1"
+                placeholder="0"
+                type="number"
+                value={stock.toString()}
+                onChange={(e) => setStock(parseInt(e.target.value) || 0)}
+                validate={validateStock}
+              />
             </div>
-            <div className="text-sm text-default-500">
-              Stock actual: <span className="font-medium">{product?.stock} unidades</span>
-            </div>
-            <Input
-              isRequired
-              label="Nuevo stock"
-              labelPlacement="outside"
-              min="0"
-              placeholder="0"
-              type="number"
-              value={stock.toString()}
-              onChange={(e) => setStock(parseInt(e.target.value) || 0)}
-            />
-          </div>
+            
+            <ModalFooter className="flex justify-end gap-2 w-full">
+              <Button variant="light" onPress={onClose}>
+                Cancelar
+              </Button>
+              <Button 
+                color="primary" 
+                isLoading={isLoading}
+                isDisabled={!isFormValid}
+                type="submit"
+              >
+                Actualizar Stock
+              </Button>
+            </ModalFooter>
+          </Form>
         </ModalBody>
-        <ModalFooter>
-          <Button variant="light" onPress={onClose}>
-            Cancelar
-          </Button>
-          <Button color="primary" isLoading={isLoading} onPress={handleSubmit}>
-            Actualizar Stock
-          </Button>
-        </ModalFooter>
       </ModalContent>
     </Modal>
   );

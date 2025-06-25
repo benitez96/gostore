@@ -1,14 +1,17 @@
 import { Card, CardBody } from "@heroui/card";
 import { Button } from "@heroui/button";
-import { RiEyeLine, RiBarChartLine, RiPieChartLine } from "react-icons/ri";
+import { RiBookOpenLine, RiBarChartLine, RiPieChartLine } from "react-icons/ri";
+import { useState } from "react";
 
 import { useToast } from "@/shared/hooks/useToast";
 import { downloadSalesBook } from "@/api";
 
 export function ReportsSection() {
   const { showSuccess, showApiError } = useToast();
+  const [isDownloading, setIsDownloading] = useState(false);
 
   const handleDownloadSalesBook = async () => {
+    setIsDownloading(true);
     try {
       await downloadSalesBook();
       showSuccess(
@@ -20,6 +23,8 @@ export function ReportsSection() {
         "Error al generar libro",
         "No se pudo descargar el libro de ventas. Inténtalo de nuevo."
       );
+    } finally {
+      setIsDownloading(false);
     }
   };
 
@@ -31,7 +36,7 @@ export function ReportsSection() {
           <CardBody className="p-4">
             <div className="flex flex-col gap-3">
               <div className="flex items-center gap-2">
-                <RiEyeLine className="text-secondary text-lg" />
+                <RiBookOpenLine className="text-secondary text-lg" />
                 <h4 className="font-medium">Libro de Ventas</h4>
               </div>
               <p className="text-sm text-default-600">
@@ -41,11 +46,12 @@ export function ReportsSection() {
               <Button
                 className="font-medium"
                 color="secondary"
-                startContent={<RiEyeLine />}
+                startContent={<RiBookOpenLine />}
                 variant="flat"
+                isLoading={isDownloading}
                 onPress={handleDownloadSalesBook}
               >
-                Descargar Libro
+                {isDownloading ? "Generando..." : "Descargar Libro"}
               </Button>
             </div>
           </CardBody>

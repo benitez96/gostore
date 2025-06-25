@@ -1,5 +1,6 @@
 import { Tooltip } from "@heroui/tooltip";
 import { Table, TableHeader, TableColumn, TableBody, TableRow, TableCell } from "@heroui/table";
+import { Button } from "@heroui/button";
 import {
   LiaFileInvoiceDollarSolid,
   LiaTrashAltSolid,
@@ -7,6 +8,7 @@ import {
   LiaCreditCardSolid,
 } from "react-icons/lia";
 import { RiEditLine } from "react-icons/ri";
+import { useState } from "react";
 
 import { downloadPaymentReceipt } from "@/api";
 import { CurrencyDisplay, DateDisplay, StatusChip } from "@/shared/components/ui";
@@ -26,13 +28,21 @@ export function QuotasTable({
   onDeletePayment,
 }: QuotasTableProps) {
   const { showSuccess, showApiError } = useToast();
+  const [downloadingIds, setDownloadingIds] = useState<Set<string | number>>(new Set());
 
   const handleDownloadPaymentReceipt = async (paymentId: string | number) => {
+    setDownloadingIds(prev => new Set(prev).add(paymentId));
     try {
       await downloadPaymentReceipt(paymentId);
       showSuccess("Comprobante generado", "El comprobante se descargó correctamente.");
     } catch (error) {
       showApiError("Error al generar comprobante", "No se pudo descargar el comprobante. Inténtalo de nuevo.");
+    } finally {
+      setDownloadingIds(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(paymentId);
+        return newSet;
+      });
     }
   };
 
@@ -74,24 +84,33 @@ export function QuotasTable({
                       <LiaReceiptSolid className="text-success" />
                       <CurrencyDisplay amount={payment.amount} size="sm" />
                       <DateDisplay date={payment.date} className="text-xs" />
-                      <Tooltip content="Descargar comprobante">
-                        <span
-                          className="text-lg text-primary cursor-pointer active:opacity-50"
-                          onClick={() =>
-                            handleDownloadPaymentReceipt(payment.id)
-                          }
+                      <Tooltip content={
+                        downloadingIds.has(payment.id) 
+                          ? "Generando comprobante..." 
+                          : "Descargar comprobante"
+                      }>
+                        <Button
+                          isIconOnly
+                          size="sm"
+                          variant="light"
+                          color="primary"
+                          isLoading={downloadingIds.has(payment.id)}
+                          isDisabled={downloadingIds.has(payment.id)}
+                          onPress={() => handleDownloadPaymentReceipt(payment.id)}
                         >
                           <LiaFileInvoiceDollarSolid />
-                        </span>
+                        </Button>
                       </Tooltip>
                       <Tooltip content="Eliminar pago">
-                        <span className="text-lg text-danger cursor-pointer active:opacity-50">
-                          <LiaTrashAltSolid
-                            onClick={() =>
-                              onDeletePayment?.(payment, quota)
-                            }
-                          />
-                        </span>
+                        <Button
+                          isIconOnly
+                          size="sm"
+                          variant="light"
+                          color="danger"
+                          onPress={() => onDeletePayment?.(payment, quota)}
+                        >
+                          <LiaTrashAltSolid />
+                        </Button>
                       </Tooltip>
                     </div>
                   ))}
@@ -106,17 +125,27 @@ export function QuotasTable({
               <div className="flex gap-2 justify-center">
                 {!quota.is_paid && (
                   <Tooltip content="Realizar pago">
-                    <span className="text-lg text-success cursor-pointer active:opacity-50">
-                      <LiaReceiptSolid
-                        onClick={() => onPaymentClick(quota)}
-                      />
-                    </span>
+                    <Button
+                      isIconOnly
+                      size="sm"
+                      variant="light"
+                      color="success"
+                      onPress={() => onPaymentClick(quota)}
+                    >
+                      <LiaReceiptSolid />
+                    </Button>
                   </Tooltip>
                 )}
                 <Tooltip content="Editar cuota">
-                  <span className="text-lg text-primary cursor-pointer active:opacity-50">
-                    <RiEditLine onClick={() => onEditQuota?.(quota)} />
-                  </span>
+                  <Button
+                    isIconOnly
+                    size="sm"
+                    variant="light"
+                    color="primary"
+                    onPress={() => onEditQuota?.(quota)}
+                  >
+                    <RiEditLine />
+                  </Button>
                 </Tooltip>
               </div>
             </TableCell>

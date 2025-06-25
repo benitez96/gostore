@@ -11,18 +11,22 @@ interface CurrencyInputProps {
   validate?: (value: number) => string | null;
   min?: number;
   decimalScale?: number;
+  labelPlacement?: "inside" | "outside" | "outside-left";
+  isClearable?: boolean;
 }
 
 export function CurrencyInput({ 
   value, 
   onValueChange, 
-  label = "Precio",
+  label,
   placeholder = "0.00",
   isRequired = false,
   name,
   validate,
   min = 0,
-  decimalScale = 2
+  decimalScale = 2,
+  labelPlacement = "inside",
+  isClearable = false
 }: CurrencyInputProps) {
   return (
     <NumericFormat
@@ -42,10 +46,12 @@ export function CurrencyInput({
       placeholder={placeholder}
       isRequired={isRequired}
       variant="bordered"
+      labelPlacement={labelPlacement}
+      isClearable={isClearable}
+      {...(isClearable && { onClear: () => onValueChange(undefined) })}
       min={min}
-      validate={validate ? (strValue: string) => {
-        const numValue = parseFloat(strValue.replace(/[\$\.\,]/g, '').replace(',', '.')) || 0;
-        return validate(numValue);
+      validate={validate ? () => {
+        return validate(value || 0);
       } : undefined}
     />
   );

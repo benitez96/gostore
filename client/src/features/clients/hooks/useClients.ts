@@ -40,7 +40,7 @@ export const useClients = ({
         const params = {
           offset,
           limit,
-          search: filterText || debouncedSearch,
+          search: filterText ?? debouncedSearch,
           states: stateIds.length > 0 ? stateIds : undefined,
           signal,
         };

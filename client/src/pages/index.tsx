@@ -47,7 +47,9 @@ export default function IndexPage() {
             </div>
             <div className="text-center">
               <h1 className="text-3xl font-bold bg-gradient-to-r from-primary-600 to-secondary-600 bg-clip-text text-transparent">
-                Bienvenido a GoStore
+                              <h1 className="text-3xl font-bold bg-gradient-to-r from-primary-600 to-secondary-600 bg-clip-text text-transparent">
+                                <span className="text-foreground">Bienvenido a</span> GoStore
+                              </h1>
               </h1>
               <p className="text-default-500">Sistema de gestión de ventas</p>
             </div>
