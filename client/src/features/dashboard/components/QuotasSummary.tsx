@@ -18,6 +18,27 @@ export interface QuotasSummaryProps {
   quotaData: QuotaData[];
 }
 
+const formatMonthYear = (monthString: string) => {
+  // Crear fecha desde el string (puede venir como "yyyy-mm" o "yyyy-mm-dd")
+  let date: Date;
+  
+  if (monthString.includes("-")) {
+    // Si viene como "yyyy-mm" o "yyyy-mm-dd"
+    const parts = monthString.split("-");
+    const year = parseInt(parts[0]);
+    const month = parseInt(parts[1]) - 1; // JavaScript months are 0-indexed
+    date = new Date(year, month, 1);
+  } else {
+    // Fallback: intentar parsear como fecha normal
+    date = new Date(monthString);
+  }
+  
+  return date.toLocaleDateString("es-ES", {
+    month: "long",
+    year: "numeric",
+  });
+};
+
 export function QuotasSummary({ quotaData }: QuotasSummaryProps) {
   if (!quotaData || quotaData.length === 0) {
     return (
@@ -57,7 +78,7 @@ export function QuotasSummary({ quotaData }: QuotasSummaryProps) {
           >
             <CardHeader className="pb-2">
               <h4 className="font-medium">
-                {formatDate(month.month + "-01")}
+                {formatMonthYear(month.month)}
               </h4>
             </CardHeader>
             <CardBody className="pt-0">

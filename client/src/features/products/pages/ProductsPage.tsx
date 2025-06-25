@@ -2,7 +2,6 @@ import { useState } from "react";
 import {
   RiShoppingBagLine,
   RiSearchLine,
-  RiEyeLine,
   RiEditLine,
   RiDeleteBinLine,
   RiAddLine,
@@ -26,14 +25,17 @@ import { Product } from "@/types";
 import DefaultLayout from "@/layouts/default";
 import { formatCurrency } from "@/shared/utils/formatters";
 
-import { useProducts } from "../hooks/useProducts";
-import { ProductForm, StockUpdateModal } from "../components";
+import { useProducts, useProductStats } from "../hooks";
+import { ProductForm, StockUpdateModal, ProductStats } from "../components";
 
 export default function ProductsPage() {
   const [isProductFormOpen, setIsProductFormOpen] = useState(false);
   const [isStockModalOpen, setIsStockModalOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [stockProduct, setStockProduct] = useState<Product | null>(null);
+
+  // Hook para las estadísticas de productos
+  const { showStats, productStats, statsLoading } = useProductStats();
 
   // Use the products hook
   const {
@@ -52,7 +54,6 @@ export default function ProductsPage() {
     isCreating,
     isUpdating,
     isUpdatingStock,
-    isDeleting,
   } = useProducts();
 
   const handleCreateProduct = async (productData: any) => {
@@ -308,6 +309,14 @@ export default function ProductsPage() {
               )}
             </TableBody>
           </Table>
+
+          {/* Estadísticas de productos */}
+          {showStats && (
+            <ProductStats 
+              productStats={productStats}
+              isLoading={statsLoading}
+            />
+          )}
         </div>
 
         {/* Product Form Modal */}

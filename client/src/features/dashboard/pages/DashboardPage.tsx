@@ -22,7 +22,7 @@ import {
 
 import { LoadingSpinner } from "@/shared/components/feedback";
 import DashboardCharts from "@/components/DashboardCharts";
-import { formatCurrency, formatDate } from "@/shared/utils/formatters";
+import { formatCurrency } from "@/shared/utils/formatters";
 import { getStatusColor, getStatusText } from "@/shared/utils/constants";
 
 import { DashboardMetrics, QuotasSummary, ReportsSection } from "../components";
@@ -109,7 +109,7 @@ export default function DashboardPage() {
 
           {/* Gráficos principales */}
           {stats && clientStatusData && quotaData && (
-            <div className="mb-8">
+            <div className="">
               <div className="flex items-center gap-2 mb-6">
                 <RiPieChartLine className="text-primary text-xl" />
                 <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
@@ -197,120 +197,7 @@ export default function DashboardPage() {
               }
             >
               <div className="p-4">
-                {quotaData && quotaData.length > 0 ? (
-                  <div className="space-y-4">
-                    {quotaData.map((month: QuotaData, index: number) => (
-                      <Card
-                        key={index}
-                        className="border border-default-200 hover:shadow-md transition-shadow"
-                      >
-                        <CardHeader className="pb-2">
-                          <h4 className="font-medium">
-                            {formatDate(month.month + "-01")}
-                          </h4>
-                        </CardHeader>
-                        <CardBody className="pt-0">
-                          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                            <div className="text-center">
-                              <p className="text-sm text-default-600">
-                                Monto Total
-                              </p>
-                              <p className="text-xl font-bold">
-                                {formatCurrency(month.total_amount)}
-                              </p>
-                            </div>
-                            <div className="text-center">
-                              <p className="text-sm text-default-600">Pagado</p>
-                              <p className="text-xl font-bold text-success">
-                                {formatCurrency(month.amount_paid)}
-                              </p>
-                            </div>
-                            <div className="text-center">
-                              <p className="text-sm text-default-600">
-                                Pendiente
-                              </p>
-                              <p className="text-xl font-bold text-warning">
-                                {formatCurrency(month.amount_not_paid)}
-                              </p>
-                            </div>
-                            <div className="text-center">
-                              <p className="text-sm text-default-600">
-                                Porcentaje Pagado
-                              </p>
-                              <p className="text-xl font-bold">
-                                {(
-                                  (month.amount_paid /
-                                    (month.total_amount || 1)) *
-                                  100
-                                ).toFixed(1)}
-                                %
-                              </p>
-                            </div>
-                          </div>
-
-                          <Divider className="my-4" />
-
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div>
-                              <p className="text-sm text-default-600 mb-2">
-                                Progreso de pagos
-                              </p>
-                              <Progress
-                                className="mb-2"
-                                color="success"
-                                value={
-                                  (month.amount_paid /
-                                    (month.total_amount || 1)) *
-                                  100
-                                }
-                              />
-                              <div className="flex justify-between text-sm">
-                                <span>
-                                  Pagado: {formatCurrency(month.amount_paid)}
-                                </span>
-                                <span>
-                                  Pendiente:{" "}
-                                  {formatCurrency(month.amount_not_paid)}
-                                </span>
-                              </div>
-                            </div>
-                            <div className="flex items-center justify-center">
-                              <div className="text-center">
-                                <p className="text-sm text-default-600">
-                                  Estado del mes
-                                </p>
-                                <Chip
-                                  color={
-                                    month.amount_not_paid === 0
-                                      ? "success"
-                                      : month.amount_paid === 0
-                                        ? "danger"
-                                        : "warning"
-                                  }
-                                  size="sm"
-                                  variant="flat"
-                                >
-                                  {month.amount_not_paid === 0
-                                    ? "Completado"
-                                    : month.amount_paid === 0
-                                      ? "Pendiente"
-                                      : "Parcial"}
-                                </Chip>
-                              </div>
-                            </div>
-                          </div>
-                        </CardBody>
-                      </Card>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="text-center py-8">
-                    <RiCalendarLine className="text-4xl mx-auto mb-2 text-default-400" />
-                    <p className="text-default-500">
-                      No hay datos de cuotas disponibles
-                    </p>
-                  </div>
-                )}
+                <QuotasSummary quotaData={quotaData || []} />
               </div>
             </AccordionItem>
 
