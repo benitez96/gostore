@@ -1,5 +1,6 @@
 // Shared hooks exports
 export * from './useAsyncAction';
+export * from './useAuth';
 export * from './useConfirmModal';
 export * from './useDebounce';
 export * from './useFormValidation';

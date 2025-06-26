@@ -91,3 +91,16 @@ type State struct {
 	ID          int64
 	Description string
 }
+
+type User struct {
+	ID           int64
+	Username     string
+	PasswordHash string
+	Permissions  int64
+	FirstName    sql.NullString
+	LastName     sql.NullString
+	IsActive     bool
+	LastLoginAt  sql.NullTime
+	CreatedAt    time.Time
+	UpdatedAt    time.Time
+}

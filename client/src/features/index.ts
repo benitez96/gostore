@@ -1,4 +1,5 @@
 // Features exports - commented until implemented
+export * from './auth';
 // export * from './clients';
 // export * from './sales';
 // export * from './products';

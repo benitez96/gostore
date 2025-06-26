@@ -1,0 +1,1 @@
+export { ProtectedComponent } from './ProtectedComponent'; 

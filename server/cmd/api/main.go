@@ -49,6 +49,11 @@ import (
 
 	pdfHandler "github.com/benitez96/gostore/cmd/api/handlers/pdf"
 	pdfSvc "github.com/benitez96/gostore/internal/services/pdf"
+
+	userRepository "github.com/benitez96/gostore/internal/repositories/user"
+	userSvc "github.com/benitez96/gostore/internal/services/user"
+
+	userHandler "github.com/benitez96/gostore/cmd/api/handlers/user"
 )
 
 // CORS middleware
@@ -114,6 +119,10 @@ func main() {
 		Queries: sqlc.New(dbConnection),
 	}
 
+	userRepository := userRepository.Repository{
+		Queries: sqlc.New(dbConnection),
+	}
+
 	// Inicializar el StateUpdater service
 	stateUpdaterSvc := stateUpdaterSvc.Service{
 		QuotaRepo:   &quotaRepository,
@@ -154,6 +163,10 @@ func main() {
 
 	chartSvc := chartSvc.Service{
 		Repo: &chartRepository,
+	}
+
+	userSvc := userSvc.Service{
+		Repo: &userRepository,
 	}
 
 	// Inicializar el worker service
@@ -197,6 +210,10 @@ func main() {
 		Service: &chartSvc,
 	}
 
+	userHandler := userHandler.Handler{
+		Service: &userSvc,
+	}
+
 	workerHandler := workerHandler.Handler{
 		Service: &workerSvc,
 	}
@@ -213,6 +230,15 @@ func main() {
 	router.GET("/api/clients/:id", clientHandler.GetClientByID)
 	router.PUT("/api/clients/:id", clientHandler.UpdateClient)
 	router.DELETE("/api/clients/:id", clientHandler.DeleteClient)
+
+	// user routes
+	router.POST("/api/users", userHandler.CreateUser)
+	router.GET("/api/users", userHandler.GetUsers)
+	router.GET("/api/users/:id", userHandler.GetUserByID)
+	router.PUT("/api/users/:id", userHandler.UpdateUser)
+	router.PUT("/api/users/:id/password", userHandler.UpdateUserPassword)
+	router.DELETE("/api/users/:id", userHandler.DeleteUser)
+	router.POST("/api/auth/login", userHandler.Login)
 
 	// sale routes
 	router.POST("/api/sales", saleHandler.CreateSale)

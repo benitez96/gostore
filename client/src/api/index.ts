@@ -218,5 +218,106 @@ export const downloadSalesBook = async () => {
   link.parentNode?.removeChild(link);
 };
 
+// Auth API functions
+export interface User {
+  id: number;
+  username: string;
+  firstName: string;
+  lastName: string;
+  permissions: number;
+  is_active: boolean;
+}
+
+export interface LoginRequest {
+  username: string;
+  password: string;
+}
+
+export interface LoginResponse {
+  user?: User;
+  message: string;
+}
+
+export interface CreateUserRequest {
+  username: string;
+  password: string;
+  firstName: string;
+  lastName: string;
+  permissions: number;
+}
+
+export interface UpdateUserRequest {
+  firstName?: string;
+  lastName?: string;
+  permissions?: number;
+  is_active?: boolean;
+}
+
+export interface UpdatePasswordRequest {
+  password: string;
+}
+
+export const authApi = {
+  // Login
+  login: async (credentials: LoginRequest): Promise<LoginResponse> => {
+    const response = await api.post("/api/auth/login", credentials);
+    return response.data;
+  },
+
+  // Get all users
+  getUsers: async (isActive?: boolean): Promise<User[]> => {
+    const params = isActive !== undefined ? `?active=${isActive}` : '';
+    const response = await api.get(`/api/users${params}`);
+    return response.data;
+  },
+
+  // Get user by ID
+  getUserById: async (id: number): Promise<User> => {
+    const response = await api.get(`/api/users/${id}`);
+    return response.data;
+  },
+
+  // Create user
+  createUser: async (userData: CreateUserRequest): Promise<User> => {
+    const response = await api.post("/api/users", userData);
+    return response.data;
+  },
+
+  // Update user
+  updateUser: async (id: number, userData: UpdateUserRequest): Promise<User> => {
+    const response = await api.put(`/api/users/${id}`, userData);
+    return response.data;
+  },
+
+  // Update user password
+  updateUserPassword: async (id: number, passwordData: UpdatePasswordRequest): Promise<void> => {
+    await api.put(`/api/users/${id}/password`, passwordData);
+  },
+
+  // Reset user password to custom password
+  resetUserPassword: async (id: number, newPassword: string): Promise<void> => {
+    await api.put(`/api/users/${id}/password`, { password: newPassword });
+  },
+
+  // Toggle user active status
+  toggleUserActive: async (id: number, isActive: boolean): Promise<User> => {
+    // Primero obtenemos el usuario actual para tener todos sus datos
+    const currentUser = await authApi.getUserById(id);
+    // Luego enviamos un UPDATE completo con todos los campos requeridos
+    const response = await api.put(`/api/users/${id}`, {
+      firstName: currentUser.firstName,
+      lastName: currentUser.lastName,
+      permissions: currentUser.permissions,
+      is_active: isActive
+    });
+    return response.data;
+  },
+
+  // Delete user (soft delete) - mantener por compatibilidad
+  deleteUser: async (id: number): Promise<void> => {
+    await api.delete(`/api/users/${id}`);
+  },
+};
+
 // Export default api instance
 export default api;
