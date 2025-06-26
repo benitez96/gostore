@@ -9,6 +9,7 @@ import { Button } from "@heroui/button";
 
 import { Product } from "@/types";
 import DefaultLayout from "@/layouts/default";
+import ConfirmModal from "@/components/ConfirmModal";
 
 import { useProducts, useProductStats } from "../hooks";
 import { ProductForm, StockUpdateModal, ProductStats, ProductsTable } from "../components";
@@ -18,6 +19,11 @@ export default function ProductsPage() {
   const [isStockModalOpen, setIsStockModalOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [stockProduct, setStockProduct] = useState<Product | null>(null);
+  
+  // Estado para el modal de confirmación de eliminación
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [productToDelete, setProductToDelete] = useState<Product | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   // Hook para las estadísticas de productos
   const { showStats, productStats, statsLoading } = useProductStats();
@@ -82,14 +88,29 @@ export default function ProductsPage() {
     }
   };
 
-  const handleDeleteProduct = async (product: Product) => {
-    if (window.confirm(`¿Estás seguro de que deseas eliminar "${product.name}"?`)) {
-      try {
-        await deleteProduct.mutateAsync(product.id);
-      } catch (error) {
-        // Error already handled in the hook
-      }
+  const handleDeleteProduct = (product: Product) => {
+    setProductToDelete(product);
+    setIsDeleteModalOpen(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!productToDelete) return;
+    
+    setIsDeleting(true);
+    try {
+      await deleteProduct.mutateAsync(productToDelete.id);
+      setIsDeleteModalOpen(false);
+      setProductToDelete(null);
+    } catch (error) {
+      // Error already handled in the hook
+    } finally {
+      setIsDeleting(false);
     }
+  };
+
+  const handleCloseDeleteModal = () => {
+    setIsDeleteModalOpen(false);
+    setProductToDelete(null);
   };
 
   const handleEditProduct = (product: Product) => {
@@ -116,8 +137,6 @@ export default function ProductsPage() {
     setIsStockModalOpen(false);
     setStockProduct(null);
   };
-
-
 
   return (
     <DefaultLayout>
@@ -207,6 +226,32 @@ export default function ProductsPage() {
           onSubmit={handleUpdateStock}
           product={stockProduct}
           isLoading={isUpdatingStock}
+        />
+
+        {/* Delete Confirmation Modal */}
+        <ConfirmModal
+          isOpen={isDeleteModalOpen}
+          onClose={handleCloseDeleteModal}
+          onConfirm={handleConfirmDelete}
+          title="Eliminar Producto"
+          message="¿Estás seguro de que deseas eliminar este producto? Esta acción no se puede deshacer."
+          confirmText="Eliminar"
+          cancelText="Cancelar"
+          isLoading={isDeleting}
+          isDangerous={true}
+          entityInfo={productToDelete ? {
+            "Nombre": productToDelete.name,
+            "Precio": `$${productToDelete.price}`,
+            "Costo": `$${productToDelete.cost}`,
+            "Stock": `${productToDelete.stock} unidades`,
+            "ID del producto": `#${productToDelete.id}`,
+          } : undefined}
+          impactList={[
+            "Se eliminará toda la información del producto",
+            "Se eliminarán todos los registros de stock",
+            "Los productos en ventas existentes no se verán afectados",
+            "Esta acción no se puede deshacer",
+          ]}
         />
       </section>
     </DefaultLayout>

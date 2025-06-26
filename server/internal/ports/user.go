@@ -28,4 +28,5 @@ type UserService interface {
 	UpdateUserPassword(ctx context.Context, id int64, req *dto.UpdateUserPasswordRequest) error
 	DeleteUser(ctx context.Context, id int64) error
 	Login(ctx context.Context, req *dto.LoginRequest) (*dto.LoginResponse, error)
+	RefreshToken(ctx context.Context, req *dto.RefreshTokenRequest) (*dto.RefreshTokenResponse, error)
 }

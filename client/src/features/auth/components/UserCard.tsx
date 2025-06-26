@@ -38,11 +38,27 @@ export default function UserCard({ user, onEdit, onToggleActive, onResetPassword
         </Chip>
       );
     }
+
+    if (permissions & PERMISSIONS.VENTAS) {
+      chips.push(
+        <Chip key="ventas" size="sm" color="warning" variant="flat">
+          Ventas
+        </Chip>
+      );
+    }
     
     if (permissions & PERMISSIONS.DASHBOARD) {
       chips.push(
         <Chip key="dashboard" size="sm" color="primary" variant="flat">
           Dashboard
+        </Chip>
+      );
+    }
+
+    if (permissions & PERMISSIONS.USUARIOS) {
+      chips.push(
+        <Chip key="usuarios" size="sm" color="danger" variant="flat">
+          Usuarios
         </Chip>
       );
     }
@@ -81,7 +97,7 @@ export default function UserCard({ user, onEdit, onToggleActive, onResetPassword
             <div className="flex items-center gap-2">
               <Chip 
                 size="sm" 
-                color={user.permissions === 7 ? "primary" : "default"}
+                color={user.permissions & PERMISSIONS.USUARIOS ? "primary" : "default"}
                 variant="flat"
               >
                 {getUserRole(user.permissions)}
@@ -106,7 +122,7 @@ export default function UserCard({ user, onEdit, onToggleActive, onResetPassword
           <div>
             <p className="text-xs text-default-500 mb-1">Bitmask</p>
             <span className="text-xs font-mono bg-default-100 px-2 py-1 rounded">
-              {user.permissions.toString(2).padStart(3, '0')} ({user.permissions})
+              {user.permissions.toString(2).padStart(5, '0')} ({user.permissions})
             </span>
           </div>
         </div>

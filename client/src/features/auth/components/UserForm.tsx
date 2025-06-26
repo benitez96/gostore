@@ -84,6 +84,8 @@ export default function UserForm({
     if (formData.permissions & PERMISSIONS.CLIENTES) selected.push('clientes');
     if (formData.permissions & PERMISSIONS.PRODUCTOS) selected.push('productos');
     if (formData.permissions & PERMISSIONS.DASHBOARD) selected.push('dashboard');
+    if (formData.permissions & PERMISSIONS.VENTAS) selected.push('ventas');
+    if (formData.permissions & PERMISSIONS.USUARIOS) selected.push('usuarios');
     return selected;
   };
 
@@ -93,6 +95,8 @@ export default function UserForm({
     if (selectedValues.includes('clientes')) newPermissions |= PERMISSIONS.CLIENTES;
     if (selectedValues.includes('productos')) newPermissions |= PERMISSIONS.PRODUCTOS;
     if (selectedValues.includes('dashboard')) newPermissions |= PERMISSIONS.DASHBOARD;
+    if (selectedValues.includes('ventas')) newPermissions |= PERMISSIONS.VENTAS;
+    if (selectedValues.includes('usuarios')) newPermissions |= PERMISSIONS.USUARIOS;
     
     setFormData(prev => ({ ...prev, permissions: newPermissions }));
   };
@@ -195,43 +199,65 @@ export default function UserForm({
             <CheckboxGroup
               value={getSelectedPermissions()}
               onValueChange={handlePermissionChange}
-              orientation="horizontal"
+              orientation="vertical"
               color="primary"
               classNames={{
-                wrapper: "gap-6"
+                wrapper: "gap-4"
               }}
             >
-              <Checkbox value="clientes">
-                <div className="flex flex-col">
-                  <span className="text-sm font-medium">Clientes</span>
-                  <span className="text-xs text-default-500">Gestionar base de clientes</span>
-                </div>
-              </Checkbox>
-              <Checkbox value="productos">
-                <div className="flex flex-col">
-                  <span className="text-sm font-medium">Productos</span>
-                  <span className="text-xs text-default-500">Administrar inventario</span>
-                </div>
-              </Checkbox>
-              <Checkbox value="dashboard">
-                <div className="flex flex-col">
-                  <span className="text-sm font-medium">Dashboard</span>
-                  <span className="text-xs text-default-500">Ver reportes y analytics</span>
-                </div>
-              </Checkbox>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <Checkbox value="clientes">
+                  <div className="flex flex-col">
+                    <span className="text-sm font-medium">Clientes</span>
+                    <span className="text-xs text-default-500">Gestionar base de clientes</span>
+                  </div>
+                </Checkbox>
+                
+                <Checkbox value="productos">
+                  <div className="flex flex-col">
+                    <span className="text-sm font-medium">Productos</span>
+                    <span className="text-xs text-default-500">Administrar inventario</span>
+                  </div>
+                </Checkbox>
+                
+                <Checkbox value="ventas">
+                  <div className="flex flex-col">
+                    <span className="text-sm font-medium">Ventas</span>
+                    <span className="text-xs text-default-500">Gestionar ventas y pagos</span>
+                  </div>
+                </Checkbox>
+                
+                <Checkbox value="dashboard">
+                  <div className="flex flex-col">
+                    <span className="text-sm font-medium">Dashboard</span>
+                    <span className="text-xs text-default-500">Ver reportes y analytics</span>
+                  </div>
+                </Checkbox>
+              </div>
+              
+              {/* Permisos administrativos */}
+              <div className="border-t pt-4 mt-4">
+                <h4 className="text-sm font-medium text-default-600 mb-3">Permisos Administrativos</h4>
+                <Checkbox value="usuarios">
+                  <div className="flex flex-col">
+                    <span className="text-sm font-medium text-warning-600">Gestión de Usuarios</span>
+                    <span className="text-xs text-default-500">Crear, editar y eliminar usuarios del sistema</span>
+                  </div>
+                </Checkbox>
+              </div>
             </CheckboxGroup>
             
             {/* Vista previa del rol */}
             {formData.permissions > 0 && (
               <div className="mt-4 p-3 bg-default-50 rounded-lg">
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 mb-2">
                   <span className="text-sm text-default-600">Rol asignado:</span>
                   <Chip color="primary" size="sm" variant="flat">
                     {getUserRole(formData.permissions)}
                   </Chip>
-                  <span className="text-xs text-default-500">
-                    (Permisos: {formData.permissions.toString(2).padStart(3, '0')})
-                  </span>
+                </div>
+                <div className="text-xs text-default-500">
+                  Permisos binarios: {formData.permissions.toString(2).padStart(5, '0')} (decimal: {formData.permissions})
                 </div>
               </div>
             )}

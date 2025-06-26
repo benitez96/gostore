@@ -25,9 +25,20 @@ type LoginRequest struct {
 }
 
 type LoginResponse struct {
-	User    *UserResponse `json:"user"`
-	Token   string        `json:"token,omitempty"`
-	Message string        `json:"message"`
+	User         *UserResponse `json:"user"`
+	Token        string        `json:"token,omitempty"`
+	RefreshToken string        `json:"refresh_token,omitempty"`
+	Message      string        `json:"message"`
+}
+
+type RefreshTokenRequest struct {
+	RefreshToken string `json:"refresh_token"`
+}
+
+type RefreshTokenResponse struct {
+	Token        string `json:"token"`
+	RefreshToken string `json:"refresh_token,omitempty"`
+	Message      string `json:"message"`
 }
 
 type UserResponse struct {

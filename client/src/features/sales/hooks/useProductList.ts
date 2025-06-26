@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { Product, Paginated } from "@/types";
+import { tokenManager } from "@/api";
 
 interface UseProductListOptions {
   searchTerm?: string;
@@ -39,7 +40,20 @@ export function useProductList({ searchTerm = "", fetchDelay = 300 }: UseProduct
         url.searchParams.set('search', search);
       }
 
-      const res = await fetch(url.toString(), { signal });
+      // Preparar cabeceras de autenticación
+      const headers: HeadersInit = {
+        'Content-Type': 'application/json',
+      };
+
+      const token = tokenManager.getToken();
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+
+      const res = await fetch(url.toString(), { 
+        signal,
+        headers 
+      });
 
       if (!res.ok) {
         throw new Error("Network response was not ok");

@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { authApi, User as ApiUser, LoginRequest } from '../../api';
+import { useState, useEffect, useCallback } from 'react';
+import { authApi, User as ApiUser, LoginRequest, tokenManager } from '../../api';
 
 // Using the API User interface
 export interface User {
@@ -7,7 +7,7 @@ export interface User {
   username: string;
   firstName: string;
   lastName: string;
-  permissions: number; // Bitmask: 1=clientes, 2=productos, 4=dashboard
+  permissions: number;
   is_active?: boolean;
 }
 
@@ -17,11 +17,13 @@ export interface AuthState {
   isLoading: boolean;
 }
 
-// Bitmask permissions constants
+// Updated permissions constants to match backend
 export const PERMISSIONS = {
-  CLIENTES: 1,   // 001
-  PRODUCTOS: 2,  // 010
-  DASHBOARD: 4,  // 100
+  CLIENTES: 1,    // 001
+  PRODUCTOS: 2,   // 010
+  DASHBOARD: 4,   // 100
+  VENTAS: 8,      // 1000
+  USUARIOS: 16,   // 10000
 } as const;
 
 // Helper functions for permission checking
@@ -30,16 +32,14 @@ export const hasPermission = (userPermissions: number, permission: number): bool
 };
 
 export const getUserRole = (permissions: number): string => {
-  switch (permissions) {
-    case 0: return 'Sin permisos';
-    case 1: return 'Solo clientes';
-    case 2: return 'Repositor';
-    case 3: return 'Empleado';
-    case 4: return 'Solo dashboard';
-    case 6: return 'Caja';
-    case 7: return 'Administrador';
-    default: return 'Personalizado';
-  }
+  if (permissions === 0) return 'Sin permisos';
+  if (permissions === 31) return 'Super Admin'; // 11111 - todos los permisos
+  if (permissions >= 16) return 'Administrador'; // Incluye usuarios
+  if (permissions >= 8) return 'Manager'; // Incluye ventas
+  if (permissions >= 4) return 'Supervisor'; // Incluye dashboard
+  if (permissions >= 2) return 'Repositor'; // Solo productos
+  if (permissions >= 1) return 'Recepcionista'; // Solo clientes
+  return 'Personalizado';
 };
 
 export function useAuth() {
@@ -49,18 +49,19 @@ export function useAuth() {
     isLoading: true,
   });
 
+  // El sistema de inactividad se maneja en AuthProvider
+
   useEffect(() => {
-    // Check if user is logged in (from localStorage or token)
+    // Check initial auth status
     checkAuthStatus();
   }, []);
 
   const checkAuthStatus = async () => {
     try {
-      // TODO: Replace with real API call
-      // For now, check localStorage or mock data
+      const token = tokenManager.getToken();
       const storedUser = localStorage.getItem('gostore_user');
       
-      if (storedUser) {
+      if (token && tokenManager.hasValidToken() && storedUser) {
         const user = JSON.parse(storedUser);
         setAuthState({
           user,
@@ -68,6 +69,8 @@ export function useAuth() {
           isLoading: false,
         });
       } else {
+        // Token inválido o no existe
+        tokenManager.clearTokens();
         setAuthState({
           user: null,
           isAuthenticated: false,
@@ -76,6 +79,7 @@ export function useAuth() {
       }
     } catch (error) {
       console.error('Error checking auth status:', error);
+      tokenManager.clearTokens();
       setAuthState({
         user: null,
         isAuthenticated: false,
@@ -89,16 +93,18 @@ export function useAuth() {
       const credentials: LoginRequest = { username, password };
       const response = await authApi.login(credentials);
       
-      if (response.user) {
+      if (response.user && response.token) {
         const user: User = {
           id: response.user.id,
           username: response.user.username,
           firstName: response.user.firstName,
           lastName: response.user.lastName,
           permissions: response.user.permissions,
-          is_active: true,
+          is_active: response.user.is_active,
         };
 
+        // Store tokens and user data
+        tokenManager.setTokens(response.token, response.refresh_token);
         localStorage.setItem('gostore_user', JSON.stringify(user));
         
         setAuthState({
@@ -106,6 +112,8 @@ export function useAuth() {
           isAuthenticated: true,
           isLoading: false,
         });
+
+        console.log('✅ Login exitoso completado');
       } else {
         throw new Error(response.message || 'Login failed');
       }
@@ -115,14 +123,20 @@ export function useAuth() {
     }
   };
 
-  const logout = () => {
-    localStorage.removeItem('gostore_user');
+  const logout = useCallback(() => {
+    console.log('Cerrando sesión...');
+    tokenManager.clearTokens();
     setAuthState({
       user: null,
       isAuthenticated: false,
       isLoading: false,
     });
-  };
+    
+    // Solo limpiar datos, no manejar redirección aquí
+    // La redirección la manejarán los componentes según sea necesario
+  }, []);
+
+  // Force logout due to inactivity - moved to AuthProvider
 
   // Helper functions for checking permissions
   const canAccess = (permission: number): boolean => {
@@ -133,9 +147,11 @@ export function useAuth() {
   const canAccessClients = (): boolean => canAccess(PERMISSIONS.CLIENTES);
   const canAccessProducts = (): boolean => canAccess(PERMISSIONS.PRODUCTOS);
   const canAccessDashboard = (): boolean => canAccess(PERMISSIONS.DASHBOARD);
+  const canAccessSales = (): boolean => canAccess(PERMISSIONS.VENTAS);
+  const canAccessUsers = (): boolean => canAccess(PERMISSIONS.USUARIOS);
 
   const isAdmin = (): boolean => {
-    return authState.user?.permissions === 7; // 111 - all permissions
+    return authState.user ? canAccessUsers() : false;
   };
 
   const getUserRoleText = (): string => {
@@ -150,6 +166,8 @@ export function useAuth() {
     canAccessClients,
     canAccessProducts,
     canAccessDashboard,
+    canAccessSales,
+    canAccessUsers,
     isAdmin,
     getUserRoleText,
     checkAuthStatus,

@@ -5,11 +5,15 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"os"
 
 	"github.com/julienschmidt/httprouter"
 
+	"github.com/benitez96/gostore/internal/middleware"
 	"github.com/benitez96/gostore/internal/repositories/db"
 	"github.com/benitez96/gostore/internal/repositories/db/sqlc"
+	"github.com/benitez96/gostore/internal/services/jwt"
+	"github.com/benitez96/gostore/internal/shared/constants"
 
 	clientHandler "github.com/benitez96/gostore/cmd/api/handlers/client"
 	paymentHandler "github.com/benitez96/gostore/cmd/api/handlers/payment"
@@ -82,6 +86,19 @@ func main() {
 		log.Fatal("No se pudo conectar a la base de datos:", err)
 	}
 	defer dbConnection.Close()
+
+	// Obtener JWT secret key de variable de entorno o usar una por defecto
+	jwtSecretKey := os.Getenv("JWT_SECRET_KEY")
+	if jwtSecretKey == "" {
+		jwtSecretKey = "your-secret-key-change-this-in-production" // ¡CAMBIAR EN PRODUCCIÓN!
+		log.Println("Warning: Using default JWT secret key. Set JWT_SECRET_KEY environment variable for production.")
+	}
+
+	// Inicializar JWT service
+	jwtService := jwt.NewService(jwtSecretKey)
+
+	// Inicializar middleware de autenticación
+	authMiddleware := middleware.NewAuthMiddleware(jwtService)
 
 	noteRepository := noteRepository.Repository{
 		Queries: sqlc.New(dbConnection),
@@ -166,7 +183,8 @@ func main() {
 	}
 
 	userSvc := userSvc.Service{
-		Repo: &userRepository,
+		Repo:       &userRepository,
+		JWTService: jwtService, // Agregar JWT service al servicio de usuario
 	}
 
 	// Inicializar el worker service
@@ -224,59 +242,64 @@ func main() {
 
 	router := httprouter.New()
 
-	// client routes
-	router.POST("/api/clients", clientHandler.CreateClient)
-	router.GET("/api/clients", clientHandler.GetAllClients)
-	router.GET("/api/clients/:id", clientHandler.GetClientByID)
-	router.PUT("/api/clients/:id", clientHandler.UpdateClient)
-	router.DELETE("/api/clients/:id", clientHandler.DeleteClient)
-
-	// user routes
-	router.POST("/api/users", userHandler.CreateUser)
-	router.GET("/api/users", userHandler.GetUsers)
-	router.GET("/api/users/:id", userHandler.GetUserByID)
-	router.PUT("/api/users/:id", userHandler.UpdateUser)
-	router.PUT("/api/users/:id/password", userHandler.UpdateUserPassword)
-	router.DELETE("/api/users/:id", userHandler.DeleteUser)
+	// Public routes (no authentication required)
 	router.POST("/api/auth/login", userHandler.Login)
+	router.POST("/api/auth/refresh", userHandler.RefreshToken)
 
-	// sale routes
-	router.POST("/api/sales", saleHandler.CreateSale)
-	router.GET("/api/sales/:id", saleHandler.GetByID)
-	router.DELETE("/api/sales/:id", saleHandler.DeleteSale)
+	// Protected routes (authentication required)
 
-	// note routes
-	router.POST("/api/sales/:sale_id/notes", noteHandler.AddNote)
-	router.DELETE("/api/notes/:id", noteHandler.DeleteNote)
+	// Client routes - Requiere permiso de clientes
+	router.POST("/api/clients", authMiddleware.RequirePermission(constants.PermissionClients)(clientHandler.CreateClient))
+	router.GET("/api/clients", authMiddleware.RequirePermission(constants.PermissionClients)(clientHandler.GetAllClients))
+	router.GET("/api/clients/:id", authMiddleware.RequirePermission(constants.PermissionClients)(clientHandler.GetClientByID))
+	router.PUT("/api/clients/:id", authMiddleware.RequirePermission(constants.PermissionClients)(clientHandler.UpdateClient))
+	router.DELETE("/api/clients/:id", authMiddleware.RequirePermission(constants.PermissionClients)(clientHandler.DeleteClient))
 
-	// product routes
-	router.POST("/api/products", productHandler.CreateProduct)
-	router.GET("/api/products", productHandler.GetAllProducts)
-	router.GET("/api/products-stats", productHandler.GetProductStats)
-	router.GET("/api/products/:id", productHandler.GetProductByID)
-	router.PUT("/api/products/:id", productHandler.UpdateProduct)
-	router.DELETE("/api/products/:id", productHandler.DeleteProduct)
+	// User routes - Requiere permiso de usuarios (solo admin)
+	router.POST("/api/users", authMiddleware.RequirePermission(constants.PermissionUsers)(userHandler.CreateUser))
+	router.GET("/api/users", authMiddleware.RequirePermission(constants.PermissionUsers)(userHandler.GetUsers))
+	router.GET("/api/users/:id", authMiddleware.RequirePermission(constants.PermissionUsers)(userHandler.GetUserByID))
+	router.PUT("/api/users/:id", authMiddleware.RequirePermission(constants.PermissionUsers)(userHandler.UpdateUser))
+	router.PUT("/api/users/:id/password", authMiddleware.RequirePermission(constants.PermissionUsers)(userHandler.UpdateUserPassword))
+	router.DELETE("/api/users/:id", authMiddleware.RequirePermission(constants.PermissionUsers)(userHandler.DeleteUser))
 
-	// chart routes
-	router.GET("/api/charts/quotas/monthly-summary", chartHandler.GetQuotaMonthlySummary)
-	router.GET("/api/charts/quotas/available-years", chartHandler.GetAvailableYears)
-	router.GET("/api/charts/clients/status-count", chartHandler.GetClientStatusCount)
-	router.GET("/api/charts/dashboard-stats", chartHandler.GetDashboardStats)
+	// Sale routes - Requiere permiso de ventas
+	router.POST("/api/sales", authMiddleware.RequirePermission(constants.PermissionSales)(saleHandler.CreateSale))
+	router.GET("/api/sales/:id", authMiddleware.RequirePermission(constants.PermissionSales)(saleHandler.GetByID))
+	router.DELETE("/api/sales/:id", authMiddleware.RequirePermission(constants.PermissionSales)(saleHandler.DeleteSale))
 
-	// payment routes
-	router.POST("/api/payments", paymentHandler.CreatePayment)
-	router.DELETE("/api/payments/:id", paymentHandler.DeletePayment)
+	// Note routes - Requiere permiso de ventas (las notas están asociadas a ventas)
+	router.POST("/api/sales/:sale_id/notes", authMiddleware.RequirePermission(constants.PermissionSales)(noteHandler.AddNote))
+	router.DELETE("/api/notes/:id", authMiddleware.RequirePermission(constants.PermissionSales)(noteHandler.DeleteNote))
 
-	// pdf routes
-	router.POST("/api/pdf/generate-receipt", pdfHandler.GeneratePaymentReceipt)
-	router.GET("/api/pdf/venta/:id", pdfHandler.GenerateSaleSheet)
-	router.GET("/api/pdf/libro-ventas", pdfHandler.GenerateSalesBook)
+	// Product routes - Requiere permiso de productos
+	router.POST("/api/products", authMiddleware.RequirePermission(constants.PermissionProducts)(productHandler.CreateProduct))
+	router.GET("/api/products", authMiddleware.RequirePermission(constants.PermissionProducts)(productHandler.GetAllProducts))
+	router.GET("/api/products-stats", authMiddleware.RequirePermission(constants.PermissionProducts)(productHandler.GetProductStats))
+	router.GET("/api/products/:id", authMiddleware.RequirePermission(constants.PermissionProducts)(productHandler.GetProductByID))
+	router.PUT("/api/products/:id", authMiddleware.RequirePermission(constants.PermissionProducts)(productHandler.UpdateProduct))
+	router.DELETE("/api/products/:id", authMiddleware.RequirePermission(constants.PermissionProducts)(productHandler.DeleteProduct))
 
-	// quota routes
-	router.PUT("/api/quotas/:id", quotaHandler.UpdateQuota)
+	// Chart routes - Requiere permiso de dashboard
+	router.GET("/api/charts/quotas/monthly-summary", authMiddleware.RequirePermission(constants.PermissionDashboard)(chartHandler.GetQuotaMonthlySummary))
+	router.GET("/api/charts/quotas/available-years", authMiddleware.RequirePermission(constants.PermissionDashboard)(chartHandler.GetAvailableYears))
+	router.GET("/api/charts/clients/status-count", authMiddleware.RequirePermission(constants.PermissionDashboard)(chartHandler.GetClientStatusCount))
+	router.GET("/api/charts/dashboard-stats", authMiddleware.RequirePermission(constants.PermissionDashboard)(chartHandler.GetDashboardStats))
 
-	// worker routes
-	router.POST("/api/worker/update-states", workerHandler.RunStateUpdate)
+	// Payment routes - Requiere permiso de ventas (los pagos están asociados a ventas)
+	router.POST("/api/payments", authMiddleware.RequirePermission(constants.PermissionSales)(paymentHandler.CreatePayment))
+	router.DELETE("/api/payments/:id", authMiddleware.RequirePermission(constants.PermissionSales)(paymentHandler.DeletePayment))
+
+	// PDF routes - Requiere permiso de ventas para generar PDFs
+	router.POST("/api/pdf/generate-receipt", authMiddleware.RequirePermission(constants.PermissionSales)(pdfHandler.GeneratePaymentReceipt))
+	router.GET("/api/pdf/venta/:id", authMiddleware.RequirePermission(constants.PermissionSales)(pdfHandler.GenerateSaleSheet))
+	router.GET("/api/pdf/libro-ventas", authMiddleware.RequirePermission(constants.PermissionSales)(pdfHandler.GenerateSalesBook))
+
+	// Quota routes - Requiere permiso de ventas (las cuotas están asociadas a ventas)
+	router.PUT("/api/quotas/:id", authMiddleware.RequirePermission(constants.PermissionSales)(quotaHandler.UpdateQuota))
+
+	// Worker routes - Requiere permiso de usuarios (solo admin)
+	router.POST("/api/worker/update-states", authMiddleware.RequirePermission(constants.PermissionUsers)(workerHandler.RunStateUpdate))
 
 	// Iniciar el worker en una goroutine separada
 	ctx, cancel := context.WithCancel(context.Background())

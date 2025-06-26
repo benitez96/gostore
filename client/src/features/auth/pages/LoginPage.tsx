@@ -1,11 +1,11 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
 import { RiShoppingBagLine } from "react-icons/ri";
 
 import LoginForm from "../components/LoginForm";
 import { siteConfig } from "@/config/site";
 import { ThemeSwitch } from "@/components/theme-switch";
-import { useAuth } from "@/shared/hooks";
+import { useAuthContext } from "@/components/AuthProvider";
 
 interface LoginFormData {
   username: string;
@@ -15,15 +15,26 @@ interface LoginFormData {
 export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
-  const { login } = useAuth();
+  const location = useLocation();
+  const { login, isAuthenticated } = useAuthContext();
+
+  // Si ya está autenticado, redirigir
+  useEffect(() => {
+    console.log('🔄 useEffect LoginPage - isAuthenticated:', isAuthenticated);
+    if (isAuthenticated) {
+      const from = location.state?.from || '/';
+      console.log('🏠 Redirigiendo a:', from);
+      navigate(from, { replace: true });
+    }
+  }, [isAuthenticated, navigate, location.state]);
 
   const handleLogin = async (data: LoginFormData) => {
     setIsLoading(true);
     
     try {
       await login(data.username, data.password);
-      // Redirect to dashboard after successful login
-      navigate("/dashboard");
+      console.log('✅ Login exitoso - esperando useEffect para redirección...');
+      
     } catch (error) {
       console.error("Error en login:", error);
       // TODO: Show error message to user
@@ -31,6 +42,15 @@ export default function LoginPage() {
       setIsLoading(false);
     }
   };
+
+  // Si ya está autenticado, no mostrar el formulario
+  if (isAuthenticated) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center p-6 bg-gradient-to-br from-background to-default-50 relative">
