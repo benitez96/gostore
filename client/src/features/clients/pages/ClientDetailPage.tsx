@@ -14,7 +14,7 @@ import { ClientHeader } from "../components/ClientHeader";
 import { SalesSection } from "@/features/sales/components/SalesSection";
 import { PaymentModal } from "@/features/sales/components/PaymentModal";
 import ClientForm from "@/components/ClientForm";
-import SaleForm from "@/components/SaleForm";
+import { SaleForm } from "@/features/sales/components";
 
 const statusTextMap = {
   1: "Al día",

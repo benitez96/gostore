@@ -1,6 +1,7 @@
 // Shared hooks exports
 export * from './useAsyncAction';
 export * from './useConfirmModal';
+export * from './useDebounce';
 export * from './useFormValidation';
 export * from './useTableActions';
 export * from './useToast';

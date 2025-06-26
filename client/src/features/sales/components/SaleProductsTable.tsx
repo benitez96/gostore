@@ -39,7 +39,7 @@ export function SaleProductsTable({
       <TableBody>
         {products.map((product: any) => (
           <TableRow key={product.id}>
-            <TableCell>{product.name}</TableCell>
+            <TableCell className="w-full">{product.name}</TableCell>
             <TableCell>{product.quantity}</TableCell>
             <TableCell>
               {isCostVisible ? (

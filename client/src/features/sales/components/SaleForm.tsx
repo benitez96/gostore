@@ -11,7 +11,7 @@ import { Button } from "@heroui/button";
 import { Input } from "@heroui/input";
 import { Form } from "@heroui/form";
 
-import { Autocomplete, AutocompleteItem } from "@heroui/autocomplete";
+
 import { DatePicker } from "@heroui/date-picker";
 import {
   Table,
@@ -34,18 +34,18 @@ import {
 
   LiaEyeSolid,
   LiaEyeSlashSolid,
-  LiaSearchSolid,
 } from "react-icons/lia";
 
-import { api } from "../api";
+import { api } from "@/api";
 import {
   Product,
   SaleFormData,
   SaleFormProduct,
   CreateSaleDto,
-} from "../types";
+} from "@/types";
 import { formatCurrency } from "@/shared/utils/formatters";
 import { CurrencyInput } from "@/shared/components/ui";
+import ProductSelector from "./ProductSelector";
 
 interface SaleFormProps {
   isOpen: boolean;
@@ -75,9 +75,8 @@ export default function SaleForm({
     products: [],
   });
 
-  const [selectedProductId, setSelectedProductId] = useState<string>("");
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [productQuantity, setProductQuantity] = useState<number>(1);
-  const [productSearch, setProductSearch] = useState<string>("");
   const [manualProduct, setManualProduct] = useState({
     name: "",
     cost: 0,
@@ -89,31 +88,7 @@ export default function SaleForm({
     useState(false);
   const [isCostVisible, setIsCostVisible] = useState(false);
 
-  // Query para obtener TODOS los productos una sola vez
-  const { data: productsResponse, isLoading: loadingProducts } = useQuery({
-    queryKey: ["all-products"],
-    queryFn: async () => {
-      const response = await api.get("/api/products", {
-        params: {
-          offset: 0,
-          limit: 1000, // Obtener todos los productos
-        },
-      });
-      return response.data;
-    },
-    enabled: isOpen,
-    staleTime: 10 * 60 * 1000, // 10 minutos - cache más largo
-    refetchOnWindowFocus: false,
-    refetchOnMount: false,
-    retry: false,
-  });
 
-  const allProducts = productsResponse?.results || [];
-  
-  // Filtrado en el cliente basado en productSearch
-  const filteredProducts = allProducts.filter((product: Product) =>
-    product.name.toLowerCase().includes(productSearch.toLowerCase())
-  );
 
   // Mutation para crear venta
   const createSaleMutation = useMutation({
@@ -141,9 +116,8 @@ export default function SaleForm({
       quota_price: 0,
       products: [],
     });
-    setSelectedProductId("");
+    setSelectedProduct(null);
     setProductQuantity(1);
-    setProductSearch("");
     setManualProduct({
       name: "",
       cost: 0,
@@ -190,17 +164,11 @@ export default function SaleForm({
       });
     } else {
       // Agregar producto seleccionado
-      if (!selectedProductId || productQuantity <= 0) return;
-
-      const product = filteredProducts?.find(
-        (p: Product) => p.id.toString() === selectedProductId,
-      );
-
-      if (!product) return;
+      if (!selectedProduct || productQuantity <= 0) return;
 
       // Verificar si el producto ya está en la lista
       const existingProductIndex = formData.products.findIndex(
-        (p) => p.product_id === selectedProductId,
+        (p) => p.product_id === selectedProduct.id.toString(),
       );
 
       if (existingProductIndex >= 0) {
@@ -215,12 +183,12 @@ export default function SaleForm({
       } else {
         // Agregar nuevo producto
         const newProduct: SaleFormProduct = {
-          product_id: selectedProductId,
-          product_name: product.name,
+          product_id: selectedProduct.id.toString(),
+          product_name: selectedProduct.name,
           quantity: productQuantity,
-          price: product.price,
-          cost: product.cost,
-          stock: product.stock,
+          price: selectedProduct.price,
+          cost: selectedProduct.cost,
+          stock: selectedProduct.stock,
           is_manual: false,
         };
 
@@ -231,9 +199,8 @@ export default function SaleForm({
       }
 
       // Reset form
-      setSelectedProductId("");
+      setSelectedProduct(null);
       setProductQuantity(1);
-      setProductSearch("");
     }
   };
 
@@ -358,7 +325,7 @@ export default function SaleForm({
     <Modal
       isOpen={isOpen}
       scrollBehavior="inside"
-      size="4xl"
+      size="5xl"
       onClose={handleClose}
     >
       <ModalContent>
@@ -519,66 +486,12 @@ export default function SaleForm({
                 </div>
               ) : (
                 // Formulario para seleccionar producto
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                  <Autocomplete
-                    label="Buscar y seleccionar producto"
-                    labelPlacement="outside"
-                    placeholder="Escribe para buscar productos..."
-                    selectedKey={selectedProductId}
-                    inputValue={productSearch}
-                    onInputChange={setProductSearch}
-                    onSelectionChange={(key) => {
-                      const selectedKey = key as string;
-                      setSelectedProductId(selectedKey || "");
-                      // Actualizar el input con el nombre del producto seleccionado
-                      if (selectedKey) {
-                        const selectedProduct = allProducts.find((p: Product) => p.id.toString() === selectedKey);
-                        if (selectedProduct) {
-                          setProductSearch(selectedProduct.name);
-                        }
-                      }
-                    }}
-                    isLoading={loadingProducts}
-                    isDisabled={loadingProducts}
-                    startContent={<LiaSearchSolid className="text-default-400" />}
-                    allowsCustomValue={false}
-                    classNames={{
-                      base: "min-h-12",
-                    }}
-                  >
-                    {filteredProducts.length > 0 ? (
-                      filteredProducts.map((product: Product) => (
-                        <AutocompleteItem
-                          key={product.id.toString()}
-                          textValue={product.name}
-                        >
-                          <div className="flex flex-col gap-1">
-                            <span className="font-medium">{product.name}</span>
-                            <span className="text-xs text-default-500">
-                              Stock: {product.stock} | Precio: {formatCurrency(product.price)}
-                            </span>
-                          </div>
-                        </AutocompleteItem>
-                      ))
-                    ) : (
-                      <AutocompleteItem key="no-results" textValue="">
-                        {productSearch ? "No se encontraron productos" : "Cargando productos..."}
-                      </AutocompleteItem>
-                    )}
-                  </Autocomplete>
-
-                  <Input
-                    label="Cantidad"
-                    labelPlacement="outside"
-                    min="1"
-                    placeholder="1"
-                    type="number"
-                    value={productQuantity.toString()}
-                    onChange={(e) =>
-                      setProductQuantity(parseInt(e.target.value) || 1)
-                    }
-                  />
-                </div>
+                <ProductSelector
+                  selectedProductId={selectedProduct?.id.toString() || ""}
+                  productQuantity={productQuantity}
+                  onProductSelect={setSelectedProduct}
+                  onQuantityChange={setProductQuantity}
+                />
               )}
 
               <Button
@@ -586,7 +499,7 @@ export default function SaleForm({
                 isDisabled={
                   isManualMode
                     ? !manualProduct.name.trim() || manualProduct.quantity <= 0
-                    : !selectedProductId || productQuantity <= 0
+                    : !selectedProduct || productQuantity <= 0
                 }
                 startContent={<LiaPlusSolid />}
                 onPress={addProduct}

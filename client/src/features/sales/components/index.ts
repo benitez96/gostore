@@ -5,4 +5,6 @@ export * from './SalesList';
 export * from './SalesSection';
 export * from './SaleDetail';
 export * from './EditQuotaModal';
-export * from './NotesSection'; 
+export * from './NotesSection';
+export { default as SaleForm } from './SaleForm';
+export { default as ProductSelector } from './ProductSelector'; 
