@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect } from 'react';
+import React, { createContext, useContext, useEffect, useRef } from 'react';
 import { useAuth } from '../shared/hooks/useAuth';
 import { useIdleWithWarning } from '../shared/hooks/useIdleWithWarning';
 import { IdleWarning, UnauthorizedPage, UnauthenticatedPage } from '../shared/components/auth';
@@ -12,6 +12,7 @@ interface AuthProviderProps {
 
 export function AuthProvider({ children }: AuthProviderProps) {
   const auth = useAuth();
+  const wasAuthenticatedRef = useRef(false);
 
   // Sistema de inactividad con warning
   const idle = useIdleWithWarning({
@@ -20,18 +21,26 @@ export function AuthProvider({ children }: AuthProviderProps) {
     onLogout: auth.logout,
   });
 
-  // Solo activar el sistema de inactividad si el usuario está autenticado
+  // Manejar el estado de autenticación sin causar loops infinitos
   useEffect(() => {
-    if (!auth.isAuthenticated) {
+    // Solo resetear el idle timer cuando el usuario se autentica por primera vez
+    // o vuelve a autenticarse después de haber estado desautenticado
+    if (auth.isAuthenticated && !wasAuthenticatedRef.current) {
+      // Usuario se acaba de autenticar
+      wasAuthenticatedRef.current = true;
       idle.reset();
+    } else if (!auth.isAuthenticated && wasAuthenticatedRef.current) {
+      // Usuario se acaba de desautenticar
+      wasAuthenticatedRef.current = false;
+      // No resetear el idle aquí para evitar loops
     }
-  }, [auth.isAuthenticated]); // Removido 'idle' de las dependencias para evitar bucles
+  }, [auth.isAuthenticated]);
 
   return (
     <AuthContext.Provider value={auth}>
       {children}
       
-      {/* Modal de advertencia de inactividad */}
+      {/* Modal de advertencia de inactividad - solo mostrar si está autenticado */}
       {auth.isAuthenticated && (
         <IdleWarning
           isVisible={idle.showWarning}

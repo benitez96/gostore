@@ -156,12 +156,11 @@ export const Navbar = () => {
           <Dropdown>
             <DropdownTrigger>
               <Button
-                variant="ghost"
-                className="flex items-center gap-2 p-2"
+                variant="light"
               >
                 <Avatar
                   size="sm"
-                  name={auth.user?.firstName + ' ' + auth.user?.lastName}
+                  name={auth.user?.firstName.slice(0,2).toUpperCase()}
                   className="w-8 h-8"
                 />
                 <div className="hidden sm:flex flex-col items-start">
@@ -205,7 +204,7 @@ export const Navbar = () => {
           <div className="flex items-center gap-2 p-2 mb-4">
             <Avatar
               size="sm"
-              name={auth.user?.firstName + ' ' + auth.user?.lastName}
+              name={auth.user?.firstName.slice(0,2).toUpperCase()}
             />
             <div>
               <p className="font-medium">

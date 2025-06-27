@@ -20,10 +20,8 @@ export default function LoginPage() {
 
   // Si ya está autenticado, redirigir
   useEffect(() => {
-    console.log('🔄 useEffect LoginPage - isAuthenticated:', isAuthenticated);
     if (isAuthenticated) {
       const from = location.state?.from || '/';
-      console.log('🏠 Redirigiendo a:', from);
       navigate(from, { replace: true });
     }
   }, [isAuthenticated, navigate, location.state]);
@@ -33,10 +31,8 @@ export default function LoginPage() {
     
     try {
       await login(data.username, data.password);
-      console.log('✅ Login exitoso - esperando useEffect para redirección...');
       
     } catch (error) {
-      console.error("Error en login:", error);
       // TODO: Show error message to user
     } finally {
       setIsLoading(false);

@@ -17,21 +17,8 @@ export default function IndexPage() {
   const { isAuthenticated, isLoading, user } = useAuthContext();
   const permissions = usePermissionRoute();
 
-  console.log('🏠 IndexPage render:', {
-    isAuthenticated,
-    isLoading,
-    hasUser: !!user,
-    userPermissions: user?.permissions,
-    permissionsState: {
-      canAccessDashboard: permissions.canAccessDashboardRoute(),
-      canAccessClients: permissions.canAccessClientsRoute(),
-      canAccessProducts: permissions.canAccessProductsRoute(),
-    }
-  });
-
   // Mostrar loading mientras verifica autenticación
   if (isLoading) {
-    console.log('⏳ IndexPage: Mostrando loading...');
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
@@ -55,7 +42,7 @@ export default function IndexPage() {
         "Gestiona tu base de datos de clientes, contactos y información",
       href: "/clientes",
       color: "secondary" as const,
-      icon: RiUserLine,
+      icon: RiTeamLine,
       canAccess: permissions.canAccessClientsRoute,
     },
     {
@@ -68,10 +55,10 @@ export default function IndexPage() {
     },
     {
       title: "Usuarios",
-      description: "Administra los usuarios del sistema, permisos y roles",
+      description: "Administra y gestiona los usuarios del sistema, roles y permisos.",
       href: "/usuarios",
       color: "warning" as const,
-      icon: RiTeamLine,
+      icon: RiUserLine,
       canAccess: permissions.canAccessUsersRoute,
     },
   ];

@@ -72,7 +72,6 @@ export function useProductList({ searchTerm = "", fetchDelay = 300 }: UseProduct
       }
     } catch (error) {
       if (error instanceof Error && error.name === "AbortError") {
-        console.log("Fetch aborted");
       } else {
         console.error("There was an error with the fetch operation:", error);
       }

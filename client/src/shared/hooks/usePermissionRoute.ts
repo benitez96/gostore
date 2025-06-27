@@ -4,13 +4,6 @@ import { PERMISSIONS } from './useAuth';
 export const usePermissionRoute = () => {
   const auth = useAuthContext();
 
-  console.log('🔐 usePermissionRoute:', {
-    isAuthenticated: auth.isAuthenticated,
-    isLoading: auth.isLoading,
-    hasUser: !!auth.user,
-    userPermissions: auth.user?.permissions
-  });
-
   const checkRouteAccess = (requiredPermissions: number[] = []): boolean => {
     if (!auth.isAuthenticated) return false;
     

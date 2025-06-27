@@ -78,7 +78,6 @@ export function useAuth() {
         });
       }
     } catch (error) {
-      console.error('Error checking auth status:', error);
       tokenManager.clearTokens();
       setAuthState({
         user: null,
@@ -113,18 +112,15 @@ export function useAuth() {
           isLoading: false,
         });
 
-        console.log('✅ Login exitoso completado');
       } else {
         throw new Error(response.message || 'Login failed');
       }
     } catch (error) {
-      console.error('Login error:', error);
       throw error;
     }
   };
 
   const logout = useCallback(() => {
-    console.log('Cerrando sesión...');
     tokenManager.clearTokens();
     setAuthState({
       user: null,
