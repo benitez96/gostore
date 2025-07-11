@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"path/filepath"
 
 	"github.com/julienschmidt/httprouter"
 
@@ -63,8 +64,19 @@ import (
 // CORS middleware
 func enableCORS(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// Allow requests from the frontend
-		w.Header().Set("Access-Control-Allow-Origin", "http://localhost:5173")
+		// Determinar el origen permitido basado en el entorno
+		origin := os.Getenv("FRONTEND_URL")
+		if origin == "" {
+			// En desarrollo, permitir localhost:5173
+			// En producción, será la misma URL del servidor
+			if os.Getenv("ENVIRONMENT") == "production" {
+				origin = "*" // En producción, el frontend se sirve desde el mismo servidor
+			} else {
+				origin = "http://localhost:5173"
+			}
+		}
+
+		w.Header().Set("Access-Control-Allow-Origin", origin)
 		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
 		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
 		w.Header().Set("Access-Control-Allow-Credentials", "true")
@@ -76,6 +88,29 @@ func enableCORS(next http.Handler) http.Handler {
 		}
 
 		next.ServeHTTP(w, r)
+	})
+}
+
+// Middleware para servir archivos estáticos del frontend
+func serveStaticFiles(staticDir string) http.Handler {
+	fileServer := http.FileServer(http.Dir(staticDir))
+
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Si es una ruta de API, no manejar aquí
+		if len(r.URL.Path) >= 4 && r.URL.Path[:4] == "/api" {
+			http.NotFound(w, r)
+			return
+		}
+
+		// Verificar si el archivo existe
+		filePath := filepath.Join(staticDir, r.URL.Path)
+		if _, err := os.Stat(filePath); os.IsNotExist(err) {
+			// Si el archivo no existe, servir index.html para SPA routing
+			http.ServeFile(w, r, filepath.Join(staticDir, "index.html"))
+			return
+		}
+
+		fileServer.ServeHTTP(w, r)
 	})
 }
 
@@ -302,6 +337,35 @@ func main() {
 	// Worker routes - Requiere permiso de usuarios (solo admin)
 	router.POST("/api/worker/update-states", authMiddleware.RequirePermission(constants.PermissionUsers)(workerHandler.RunStateUpdate))
 
+	// Configurar servidor de archivos estáticos
+	staticDir := os.Getenv("STATIC_DIR")
+	if staticDir == "" {
+		staticDir = "./static" // Directorio por defecto
+	}
+
+	// Crear un mux que maneje tanto API como archivos estáticos
+	mux := http.NewServeMux()
+
+	// Registrar rutas de API
+	mux.Handle("/api/", enableCORS(router))
+
+	// Servir archivos estáticos del frontend
+	if _, err := os.Stat(staticDir); err == nil {
+		fmt.Printf("📁 Serving static files from: %s\n", staticDir)
+		mux.Handle("/", serveStaticFiles(staticDir))
+	} else {
+		fmt.Printf("⚠️  Static directory not found: %s. API-only mode.\n", staticDir)
+		mux.Handle("/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			if r.URL.Path == "/" {
+				w.Header().Set("Content-Type", "application/json")
+				w.WriteHeader(http.StatusOK)
+				w.Write([]byte(`{"message":"GoStore API Server","status":"running","mode":"api-only"}`))
+				return
+			}
+			http.NotFound(w, r)
+		}))
+	}
+
 	// Iniciar el worker en una goroutine separada
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -310,6 +374,18 @@ func main() {
 		workerSvc.RunStateUpdateWorker(ctx)
 	}()
 
-	fmt.Println("🚀 Starting server on port 8080")
-	log.Fatal(http.ListenAndServe(":8080", enableCORS(router)))
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "8080"
+	}
+
+	fmt.Printf("🚀 Starting GoStore server on port %s\n", port)
+	if _, err := os.Stat(staticDir); err == nil {
+		fmt.Printf("🌐 Frontend available at: http://localhost:%s\n", port)
+		fmt.Printf("🔗 API available at: http://localhost:%s/api\n", port)
+	} else {
+		fmt.Printf("🔗 API available at: http://localhost:%s/api\n", port)
+	}
+
+	log.Fatal(http.ListenAndServe(":"+port, mux))
 }
