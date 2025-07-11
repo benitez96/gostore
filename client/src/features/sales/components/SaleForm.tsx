@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   Modal,
   ModalContent,
@@ -9,8 +9,6 @@ import {
 } from "@heroui/modal";
 import { Button } from "@heroui/button";
 import { Input } from "@heroui/input";
-import { Form } from "@heroui/form";
-
 
 import { DatePicker } from "@heroui/date-picker";
 import {
@@ -31,7 +29,6 @@ import {
   LiaCreditCardSolid,
   LiaPlusSolid,
   LiaTrashSolid,
-
   LiaEyeSolid,
   LiaEyeSlashSolid,
 } from "react-icons/lia";
@@ -39,7 +36,6 @@ import {
 import { api } from "@/api";
 import {
   Product,
-  SaleFormData,
   SaleFormProduct,
   CreateSaleDto,
 } from "@/types";

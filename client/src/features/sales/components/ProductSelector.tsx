@@ -7,7 +7,7 @@ import { Product } from "@/types";
 import { formatCurrency } from "@/shared/utils/formatters";
 import { useDebounce } from "@/shared/hooks";
 import { useProductList } from "../hooks";
-import { Chip } from "@heroui/chip";
+
 
 interface ProductSelectorProps {
   selectedProductId: string;

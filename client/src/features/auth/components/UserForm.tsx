@@ -111,7 +111,6 @@ export default function UserForm({
       formData.lastName.trim().length >= 2 &&
       formData.permissions > 0;
       
-  const title = mode === 'create' ? 'Crear Usuario' : 'Editar Usuario';
   const submitText = mode === 'create' ? 'Crear Usuario' : 'Guardar Cambios';
 
   return (

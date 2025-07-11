@@ -4,7 +4,7 @@ import { Divider } from "@heroui/divider";
 import { Progress } from "@heroui/progress";
 import { RiCalendarLine } from "react-icons/ri";
 
-import { formatCurrency, formatDate } from "@/shared/utils/formatters";
+import { formatCurrency } from "@/shared/utils/formatters";
 import { EmptyState } from "@/shared/components/feedback";
 
 export interface QuotaData {

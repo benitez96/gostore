@@ -1,11 +1,11 @@
 import { Accordion, AccordionItem } from "@heroui/accordion";
 import { Button } from "@heroui/button";
 import { Tooltip } from "@heroui/tooltip";
-import { LiaFileInvoiceDollarSolid, LiaTrashAltSolid, LiaDownloadSolid } from "react-icons/lia";
+import { LiaFileInvoiceDollarSolid, LiaTrashAltSolid } from "react-icons/lia";
 import { useState } from "react";
 
 import { SaleDetail } from "@/features/sales/components/SaleDetail";
-import { CurrencyDisplay, DateDisplay, StatusChip } from "@/shared/components/ui";
+import { StatusChip } from "@/shared/components/ui";
 
 
 

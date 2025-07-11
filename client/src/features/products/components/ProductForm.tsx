@@ -5,7 +5,7 @@ import { Input } from "@heroui/input";
 import { Form } from "@heroui/form";
 import { RiShoppingBagLine } from "react-icons/ri";
 
-import { useToast } from "@/shared/hooks/useToast";
+
 import { formatCurrency } from "@/shared/utils/formatters";
 import { CurrencyInput } from "@/shared/components/ui";
 
@@ -37,7 +37,7 @@ export function ProductForm({
   isLoading,
   validationErrors,
 }: ProductFormProps) {
-  const { showApiError } = useToast();
+
   
   const [formData, setFormData] = useState<ProductFormData>({
     name: "",

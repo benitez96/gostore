@@ -4,7 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useCatalogStatsShortcut } from "@/hooks/useShortcut";
 import { api } from "@/api";
 
-export interface ProductStats {
+export interface ProductStatsData {
   total_products: number;
   total_cost: number;
   total_value: number;
@@ -22,7 +22,7 @@ export const useProductStats = () => {
 
   // Query para obtener estadísticas de productos
   const { data: productStats, isLoading: statsLoading } =
-    useQuery<ProductStats>({
+    useQuery<ProductStatsData>({
       queryKey: ["product-stats"],
       queryFn: async () => {
         const response = await api.get("/api/products-stats");

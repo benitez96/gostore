@@ -1,5 +1,4 @@
 import { useState, useEffect } from "react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter } from "@heroui/modal";
 import { Button } from "@heroui/button";
 import { DatePicker } from "@heroui/date-picker";
@@ -15,7 +14,6 @@ export interface PaymentModalProps {
   isOpen: boolean;
   onClose: () => void;
   quota: any;
-  saleId: string;
   onSuccess: () => void;
 }
 
@@ -28,10 +26,8 @@ export function PaymentModal({
   isOpen,
   onClose,
   quota,
-  saleId,
   onSuccess,
 }: PaymentModalProps) {
-  const queryClient = useQueryClient();
   const { showSuccess, showApiError } = useToast();
   
   const [formData, setFormData] = useState<PaymentFormData>({

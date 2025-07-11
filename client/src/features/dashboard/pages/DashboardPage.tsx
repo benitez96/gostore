@@ -1,39 +1,25 @@
 import DefaultLayout from "@/layouts/default";
 import { Button } from "@heroui/button";
 import { Accordion, AccordionItem } from "@heroui/accordion";
-import { Select, SelectItem } from "@heroui/select";
-import { Card, CardBody, CardHeader } from "@heroui/card";
+import { Card, CardBody } from "@heroui/card";
 import { Chip } from "@heroui/chip";
 import { Progress } from "@heroui/progress";
-import { Divider } from "@heroui/divider";
 import {
   RiDonutChartLine,
   RiRefreshLine,
   RiAlertLine,
-  RiBarChartLine,
   RiFileListLine,
   RiUserLine,
-  RiShoppingBagLine,
   RiMoneyDollarCircleLine,
-  RiCalendarLine,
   RiPieChartLine,
-  RiCheckLine,
 } from "react-icons/ri";
 
 import { LoadingSpinner } from "@/shared/components/feedback";
 import DashboardCharts from "@/components/DashboardCharts";
-import { formatCurrency } from "@/shared/utils/formatters";
 import { getStatusColor, getStatusText } from "@/shared/utils/constants";
 
 import { DashboardMetrics, QuotasSummary, ReportsSection, DailyCollectionsChart } from "../components";
 import { useDashboard, ClientStatusData } from "../hooks";
-
-interface QuotaData {
-  month: string;
-  total_amount: number;
-  amount_paid: number;
-  amount_not_paid: number;
-}
 
 export default function DashboardPage() {
   const {

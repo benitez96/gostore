@@ -9,10 +9,10 @@ import {
 
 import { formatCurrency } from "@/shared/utils/formatters";
 
-import { ProductStats as ProductStatsType } from "../hooks/useProductStats";
+import { ProductStatsData } from "../hooks/useProductStats";
 
 interface ProductStatsProps {
-  productStats?: ProductStatsType;
+  productStats?: ProductStatsData;
   isLoading: boolean;
 }
 

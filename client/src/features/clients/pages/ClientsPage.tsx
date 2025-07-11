@@ -47,7 +47,6 @@ export default function ClientsPage() {
     isLoading,
     hasMore,
     totalClients,
-    loadMore,
     reload,
     loaderRef,
     scrollerRef,

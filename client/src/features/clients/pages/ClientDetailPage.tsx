@@ -6,7 +6,7 @@ import DefaultLayout from "@/layouts/default";
 import { LoadingSpinner } from "@/shared/components/feedback";
 import { useToast } from "@/shared/hooks/useToast";
 import { useModal } from "@/shared/hooks/useModal";
-import { useConfirmModal } from "@/shared/hooks/useConfirmModal";
+
 import { ConfirmModal } from "@/shared/components/feedback";
 
 import { api, ClientDetail, downloadSaleSheet } from "@/api";
@@ -261,7 +261,6 @@ export default function ClientDetailPage() {
           // No resetear selectedSale para mantener el acordeón abierto
         }}
         quota={selectedQuota}
-        saleId={selectedSale}
         onSuccess={handlePaymentSuccess}
       />
 

@@ -1,5 +1,5 @@
 import { ReactNode } from 'react';
-import { useAuth, PERMISSIONS } from '@/shared/hooks/useAuth';
+import { useAuth } from '@/shared/hooks/useAuth';
 
 interface ProtectedComponentProps {
   children: ReactNode;

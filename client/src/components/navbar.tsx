@@ -15,7 +15,6 @@ import {
   RiDashboardLine, 
   RiTeamLine, 
   RiBox3Line, 
-  RiShoppingCart2Line, 
   RiUserLine,
   RiLogoutBoxLine,
   RiHomeLine 

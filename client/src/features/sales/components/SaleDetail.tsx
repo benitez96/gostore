@@ -1,23 +1,19 @@
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Button } from "@heroui/button";
 import { Spinner } from "@heroui/spinner";
-import { Tooltip } from "@heroui/tooltip";
 import {
-  LiaFileInvoiceDollarSolid,
   LiaCalendarAltSolid,
   LiaMoneyBillWaveSolid,
   LiaCreditCardSolid,
 } from "react-icons/lia";
 import { RiShoppingBagLine } from "react-icons/ri";
 
-import { api, downloadSaleSheet } from "@/api";
-import { PaymentModal } from "./PaymentModal";
+import { api } from "@/api";
 import { EditQuotaModal } from "./EditQuotaModal";
 import { QuotasTable } from "./QuotasTable";
 import { SaleProductsTable } from "./SaleProductsTable";
 import { NotesSection } from "./NotesSection";
-import { CurrencyDisplay, DateDisplay, StatusChip } from "@/shared/components/ui";
+import { CurrencyDisplay, DateDisplay } from "@/shared/components/ui";
 
 
 

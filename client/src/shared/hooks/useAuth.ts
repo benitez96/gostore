@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { authApi, User as ApiUser, LoginRequest, tokenManager } from '../../api';
+import { authApi, LoginRequest, tokenManager } from '../../api';
 
 // Using the API User interface
 export interface User {

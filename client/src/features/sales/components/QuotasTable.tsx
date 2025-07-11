@@ -5,7 +5,6 @@ import {
   LiaFileInvoiceDollarSolid,
   LiaTrashAltSolid,
   LiaReceiptSolid,
-  LiaCreditCardSolid,
 } from "react-icons/lia";
 import { RiEditLine } from "react-icons/ri";
 import { useState } from "react";

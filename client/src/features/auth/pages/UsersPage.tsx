@@ -12,7 +12,7 @@ import { getUserRole } from "@/shared/hooks/useAuth";
 import { useState } from "react";
 
 export default function UsersPage() {
-  const { users, isLoading, createUser, updateUser, deleteUser, resetUserPassword, toggleUserActive } = useUsers();
+  const { users, isLoading, createUser, updateUser, resetUserPassword, toggleUserActive } = useUsers();
   const {
     // Create modal
     isCreateModalOpen,
