@@ -10,6 +10,16 @@ WHERE due_date IS NOT NULL
 GROUP BY strftime('%Y-%m', due_date)
 ORDER BY month ASC;
 
+-- name: GetDailyCollections :many
+SELECT 
+    strftime('%Y-%m-%d', date) as collection_date,
+    SUM(amount) as total_collected,
+    COUNT(*) as payment_count
+FROM payments 
+WHERE date >= ? AND date <= ?
+GROUP BY strftime('%Y-%m-%d', date)
+ORDER BY collection_date ASC;
+
 -- name: GetQuotaMonthlySummaryAll :many
 SELECT 
     strftime('%Y-%m', due_date) as month,

@@ -30,3 +30,7 @@ func (s *Service) GetAvailableYears() ([]string, error) {
 func (s *Service) GetDashboardStats() (*domain.DashboardStats, error) {
 	return s.Repo.GetDashboardStats()
 }
+
+func (s *Service) GetDailyCollections(startDate, endDate time.Time) ([]*domain.DailyCollection, error) {
+	return s.Repo.GetDailyCollections(startDate, endDate)
+}

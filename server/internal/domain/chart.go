@@ -31,3 +31,10 @@ type ClientStatusCount struct {
 	StatusName  string `json:"status_name"`
 	ClientCount int    `json:"client_count"`
 }
+
+// DailyCollection represents the collections grouped by day for line charts
+type DailyCollection struct {
+	CollectionDate string  `json:"collection_date"` // Format: "2024-01-15"
+	TotalCollected float64 `json:"total_collected"` // Total amount collected on that day
+	PaymentCount   int64   `json:"payment_count"`   // Number of payments made on that day
+}

@@ -25,7 +25,7 @@ import DashboardCharts from "@/components/DashboardCharts";
 import { formatCurrency } from "@/shared/utils/formatters";
 import { getStatusColor, getStatusText } from "@/shared/utils/constants";
 
-import { DashboardMetrics, QuotasSummary, ReportsSection } from "../components";
+import { DashboardMetrics, QuotasSummary, ReportsSection, DailyCollectionsChart } from "../components";
 import { useDashboard, ClientStatusData } from "../hooks";
 
 interface QuotaData {
@@ -182,6 +182,22 @@ export default function DashboardPage() {
                       </Card>
                     ))}
                 </div>
+              </div>
+            </AccordionItem>
+
+            {/* Cobros por día */}
+            <AccordionItem
+              key="daily-collections"
+              aria-label="Cobros por Día"
+              title={
+                <div className="flex items-center gap-2">
+                  <RiMoneyDollarCircleLine className="text-success" />
+                  <span>Cobros por Día</span>
+                </div>
+              }
+            >
+              <div className="p-4">
+                <DailyCollectionsChart />
               </div>
             </AccordionItem>
 

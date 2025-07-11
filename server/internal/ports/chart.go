@@ -12,6 +12,7 @@ type ChartService interface {
 	GetAvailableYears() ([]string, error)
 	GetClientStatusCount() ([]*domain.ClientStatusCount, error)
 	GetDashboardStats() (*domain.DashboardStats, error)
+	GetDailyCollections(startDate, endDate time.Time) ([]*domain.DailyCollection, error)
 }
 
 type ChartRepository interface {
@@ -20,4 +21,5 @@ type ChartRepository interface {
 	GetAvailableYears() ([]string, error)
 	GetClientStatusCount() ([]*domain.ClientStatusCount, error)
 	GetDashboardStats() (*domain.DashboardStats, error)
+	GetDailyCollections(startDate, endDate time.Time) ([]*domain.DailyCollection, error)
 }

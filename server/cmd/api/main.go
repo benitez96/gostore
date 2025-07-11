@@ -285,6 +285,7 @@ func main() {
 	router.GET("/api/charts/quotas/available-years", authMiddleware.RequirePermission(constants.PermissionDashboard)(chartHandler.GetAvailableYears))
 	router.GET("/api/charts/clients/status-count", authMiddleware.RequirePermission(constants.PermissionDashboard)(chartHandler.GetClientStatusCount))
 	router.GET("/api/charts/dashboard-stats", authMiddleware.RequirePermission(constants.PermissionDashboard)(chartHandler.GetDashboardStats))
+	router.GET("/api/charts/collections/daily", authMiddleware.RequirePermission(constants.PermissionDashboard)(chartHandler.GetDailyCollections))
 
 	// Payment routes - Requiere permiso de ventas (los pagos están asociados a ventas)
 	router.POST("/api/payments", authMiddleware.RequirePermission(constants.PermissionSales)(paymentHandler.CreatePayment))

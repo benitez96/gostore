@@ -8,6 +8,7 @@ package sqlc
 import (
 	"context"
 	"database/sql"
+	"time"
 )
 
 const getActiveSales = `-- name: GetActiveSales :one
@@ -137,6 +138,51 @@ func (q *Queries) GetCountQuotasDueThisMonth(ctx context.Context) (int64, error)
 	var count int64
 	err := row.Scan(&count)
 	return count, err
+}
+
+const getDailyCollections = `-- name: GetDailyCollections :many
+SELECT 
+    strftime('%Y-%m-%d', date) as collection_date,
+    SUM(amount) as total_collected,
+    COUNT(*) as payment_count
+FROM payments 
+WHERE date >= ? AND date <= ?
+GROUP BY strftime('%Y-%m-%d', date)
+ORDER BY collection_date ASC
+`
+
+type GetDailyCollectionsParams struct {
+	Date   time.Time
+	Date_2 time.Time
+}
+
+type GetDailyCollectionsRow struct {
+	CollectionDate interface{}
+	TotalCollected sql.NullFloat64
+	PaymentCount   int64
+}
+
+func (q *Queries) GetDailyCollections(ctx context.Context, arg GetDailyCollectionsParams) ([]GetDailyCollectionsRow, error) {
+	rows, err := q.db.QueryContext(ctx, getDailyCollections, arg.Date, arg.Date_2)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetDailyCollectionsRow
+	for rows.Next() {
+		var i GetDailyCollectionsRow
+		if err := rows.Scan(&i.CollectionDate, &i.TotalCollected, &i.PaymentCount); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const getPaidQuotasDueLastMonth = `-- name: GetPaidQuotasDueLastMonth :one
