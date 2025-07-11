@@ -25,7 +25,7 @@ export default function ProductsPage() {
   const [productToDelete, setProductToDelete] = useState<Product | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
 
-  // Hook para las estadísticas de productos
+  // Hook para las estadísticas de productos (solo se muestra si tiene permisos de dashboard)
   const { showStats, productStats, statsLoading } = useProductStats();
 
   // Use the products hook

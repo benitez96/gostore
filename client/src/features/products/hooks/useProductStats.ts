@@ -1,7 +1,5 @@
-import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-
-import { useCatalogStatsShortcut } from "@/hooks/useShortcut";
+import { useAuthContext } from "@/components/AuthProvider";
 import { api } from "@/api";
 
 export interface ProductStatsData {
@@ -13,12 +11,7 @@ export interface ProductStatsData {
 }
 
 export const useProductStats = () => {
-  const [showStats, setShowStats] = useState(false);
-
-  // Hook para el shortcut de estadísticas del catálogo
-  useCatalogStatsShortcut(() => {
-    setShowStats((prev) => !prev);
-  });
+  const { canAccessDashboard } = useAuthContext();
 
   // Query para obtener estadísticas de productos
   const { data: productStats, isLoading: statsLoading } =
@@ -28,12 +21,16 @@ export const useProductStats = () => {
         const response = await api.get("/api/products-stats");
         return response.data;
       },
+      // Solo ejecutar la query si el usuario tiene permisos de dashboard
+      enabled: canAccessDashboard(),
     });
+
+  // Mostrar estadísticas si el usuario tiene permisos de dashboard
+  const showStats = canAccessDashboard();
 
   return {
     showStats,
     productStats,
     statsLoading,
-    setShowStats,
   };
 }; 

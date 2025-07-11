@@ -18,13 +18,15 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const idle = useIdleWithWarning({
     idleTimeout: 5 * 60 * 1000, // 5 minutos total
     warningTimeout: 30 * 1000,  // 30 segundos de warning
-    onLogout: auth.logout,
+    onLogout: () => {
+      // Limpiar el estado de autenticación cuando se hace logout por inactividad
+      auth.logout();
+      wasAuthenticatedRef.current = false;
+    },
   });
 
   // Manejar el estado de autenticación sin causar loops infinitos
   useEffect(() => {
-    // Solo resetear el idle timer cuando el usuario se autentica por primera vez
-    // o vuelve a autenticarse después de haber estado desautenticado
     if (auth.isAuthenticated && !wasAuthenticatedRef.current) {
       // Usuario se acaba de autenticar
       wasAuthenticatedRef.current = true;
@@ -32,9 +34,29 @@ export function AuthProvider({ children }: AuthProviderProps) {
     } else if (!auth.isAuthenticated && wasAuthenticatedRef.current) {
       // Usuario se acaba de desautenticar
       wasAuthenticatedRef.current = false;
-      // No resetear el idle aquí para evitar loops
+      // Resetear el idle timer cuando se desautentica para limpiar el estado
+      idle.reset();
+    } else if (!auth.isAuthenticated && !wasAuthenticatedRef.current) {
+      // Usuario no autenticado desde el inicio - resetear el idle timer
+      idle.reset();
     }
-  }, [auth.isAuthenticated]);
+  }, [auth.isAuthenticated, idle]);
+
+  // Escuchar eventos de logout para resetear el estado
+  useEffect(() => {
+    const handleLogout = () => {
+      wasAuthenticatedRef.current = false;
+      idle.reset();
+    };
+    
+    window.addEventListener('auth:logout', handleLogout);
+    window.addEventListener('auth:logout:complete', handleLogout);
+    
+    return () => {
+      window.removeEventListener('auth:logout', handleLogout);
+      window.removeEventListener('auth:logout:complete', handleLogout);
+    };
+  }, [idle]);
 
   return (
     <AuthContext.Provider value={auth}>

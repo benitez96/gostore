@@ -54,6 +54,21 @@ export function useAuth() {
   useEffect(() => {
     // Check initial auth status
     checkAuthStatus();
+    
+    // Escuchar eventos de logout para limpiar el estado
+    const handleLogout = () => {
+      setAuthState({
+        user: null,
+        isAuthenticated: false,
+        isLoading: false,
+      });
+    };
+    
+    window.addEventListener('auth:logout', handleLogout);
+    
+    return () => {
+      window.removeEventListener('auth:logout', handleLogout);
+    };
   }, []);
 
   const checkAuthStatus = async () => {
@@ -61,24 +76,38 @@ export function useAuth() {
       const token = tokenManager.getToken();
       const storedUser = localStorage.getItem('gostore_user');
       
+      // Verificar que tanto el token como el usuario estén presentes y válidos
       if (token && tokenManager.hasValidToken() && storedUser) {
-        const user = JSON.parse(storedUser);
-        setAuthState({
-          user,
-          isAuthenticated: true,
-          isLoading: false,
-        });
-      } else {
-        // Token inválido o no existe
-        tokenManager.clearTokens();
-        setAuthState({
-          user: null,
-          isAuthenticated: false,
-          isLoading: false,
-        });
+        try {
+          const user = JSON.parse(storedUser);
+          // Verificar que el usuario tenga los campos requeridos
+          if (user && user.id && user.username) {
+            setAuthState({
+              user,
+              isAuthenticated: true,
+              isLoading: false,
+            });
+            return;
+          }
+        } catch (parseError) {
+          // Error al parsear el usuario - limpiar todo
+          console.warn('Error parsing stored user:', parseError);
+        }
       }
-    } catch (error) {
+      
+      // Token inválido, no existe, o usuario inválido - limpiar todo
       tokenManager.clearTokens();
+      localStorage.removeItem('gostore_user');
+      setAuthState({
+        user: null,
+        isAuthenticated: false,
+        isLoading: false,
+      });
+    } catch (error) {
+      // Error al verificar autenticación - limpiar todo
+      console.warn('Error checking auth status:', error);
+      tokenManager.clearTokens();
+      localStorage.removeItem('gostore_user');
       setAuthState({
         user: null,
         isAuthenticated: false,
@@ -121,12 +150,18 @@ export function useAuth() {
   };
 
   const logout = useCallback(() => {
+    // Limpiar tokens y datos del usuario
     tokenManager.clearTokens();
+    localStorage.removeItem('gostore_user');
+    
     setAuthState({
       user: null,
       isAuthenticated: false,
       isLoading: false,
     });
+    
+    // Disparar evento de logout completo
+    window.dispatchEvent(new CustomEvent('auth:logout:complete'));
     
     // Solo limpiar datos, no manejar redirección aquí
     // La redirección la manejarán los componentes según sea necesario
