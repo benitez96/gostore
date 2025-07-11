@@ -12,12 +12,12 @@ ORDER BY month ASC;
 
 -- name: GetDailyCollections :many
 SELECT 
-    strftime('%Y-%m-%d', date) as collection_date,
+    strftime('%Y-%m-%d', date, 'localtime') as collection_date,
     SUM(amount) as total_collected,
     COUNT(*) as payment_count
 FROM payments 
 WHERE date >= ? AND date <= ?
-GROUP BY strftime('%Y-%m-%d', date)
+GROUP BY strftime('%Y-%m-%d', date, 'localtime')
 ORDER BY collection_date ASC;
 
 -- name: GetQuotaMonthlySummaryAll :many
