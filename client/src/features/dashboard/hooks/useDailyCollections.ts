@@ -28,17 +28,8 @@ export function useDailyCollections() {
     return `${year}-${month}-${day}`;
   };
 
-  // Función para ajustar la fecha final para incluir el día completo
-  const adjustEndDateForAPI = (date: DateValue): string => {
-    const year = date.year;
-    const month = date.month.toString().padStart(2, '0');
-    const day = date.day.toString().padStart(2, '0');
-    return `${year}-${month}-${day}`;
-  };
-
   const startDateStr = formatDateForAPI(startDate);
-  // Ajustar la fecha final para incluir el día completo
-  const endDateStr = adjustEndDateForAPI(endDate);
+  const endDateStr = formatDateForAPI(endDate);
 
   // Query para obtener los datos de cobros diarios
   const {
@@ -49,11 +40,9 @@ export function useDailyCollections() {
   } = useQuery({
     queryKey: ["daily-collections", startDateStr, endDateStr],
     queryFn: async (): Promise<DailyCollectionData[]> => {
-      console.log("Fetching daily collections with dates:", { startDateStr, endDateStr });
       const response = await api.get(
         `/api/charts/collections/daily?start_date=${startDateStr}&end_date=${endDateStr}`
       );
-      console.log("Daily collections response:", response.data);
       return response.data || [];
     },
     enabled: !!startDate && !!endDate, // Solo ejecutar si tenemos ambas fechas
@@ -69,7 +58,6 @@ export function useDailyCollections() {
   };
 
   const handleDateRangeChange = (start: DateValue, end: DateValue) => {
-    console.log("handleDateRangeChange called with:", { start, end });
     setStartDate(start);
     setEndDate(end);
   };
@@ -79,7 +67,6 @@ export function useDailyCollections() {
     const todayDate = today("America/Argentina/Buenos_Aires");
     const sevenDaysAgo = todayDate.subtract({ days: 7 });
     
-    console.log("setLast7Days - Start:", formatDateForAPI(sevenDaysAgo), "End:", formatDateForAPI(todayDate));
     setStartDate(sevenDaysAgo);
     setEndDate(todayDate);
   };
@@ -88,7 +75,6 @@ export function useDailyCollections() {
     const todayDate = today("America/Argentina/Buenos_Aires");
     const thirtyDaysAgo = todayDate.subtract({ days: 30 });
     
-    console.log("setLast30Days - Start:", formatDateForAPI(thirtyDaysAgo), "End:", formatDateForAPI(todayDate));
     setStartDate(thirtyDaysAgo);
     setEndDate(todayDate);
   };
@@ -97,7 +83,6 @@ export function useDailyCollections() {
     const todayDate = today("America/Argentina/Buenos_Aires");
     const firstDayOfMonth = new CalendarDate(todayDate.year, todayDate.month, 1);
     
-    console.log("setCurrentMonth - Start:", formatDateForAPI(firstDayOfMonth), "End:", formatDateForAPI(todayDate));
     setStartDate(firstDayOfMonth);
     setEndDate(todayDate);
   };

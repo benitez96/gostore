@@ -32,6 +32,9 @@ func (h *Handler) GetDailyCollections(w http.ResponseWriter, r *http.Request, ps
 		return
 	}
 
+	// Ajustar la fecha final para incluir todo el día (hasta 23:59:59)
+	endDate = endDate.Add(24*time.Hour - time.Second)
+
 	// Validar que start_date sea anterior o igual a end_date
 	if startDate.After(endDate) {
 		http.Error(w, "start_date must be before or equal to end_date", http.StatusBadRequest)

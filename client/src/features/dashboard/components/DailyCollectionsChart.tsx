@@ -30,35 +30,16 @@ export function DailyCollectionsChart() {
     setCurrentMonth,
   } = useDailyCollections();
 
-  // Función para procesar las fechas correctamente
-  const processChartData = (data: DailyCollectionData[]) => {
-    return data.map((item: DailyCollectionData) => {
-      // La fecha viene del backend en formato "YYYY-MM-DD" 
-      // Necesitamos asegurarnos de que se interprete correctamente
-      const [year, month, day] = item.collection_date.split('-').map(Number);
-      
-      // Crear fecha en zona horaria local para evitar problemas de UTC
-      const localDate = new Date(year, month - 1, day); // month - 1 porque Date usa 0-indexed months
-      
-      // Formatear para mostrar
-      const displayDate = localDate.toLocaleDateString("es-ES", {
-        month: "short",
-        day: "numeric",
-      });
-
-      return {
-        date: item.collection_date,
-        displayDate,
-        totalCollected: item.total_collected,
-        paymentCount: item.payment_count,
-        // Agregar fecha completa para debugging
-        fullDate: localDate,
-      };
-    });
-  };
-
   // Preparar datos para el gráfico de barras
-  const chartData = dailyCollections ? processChartData(dailyCollections) : [];
+  const chartData = dailyCollections?.map((item: DailyCollectionData) => ({
+    date: item.collection_date,
+    displayDate: new Date(item.collection_date).toLocaleDateString("es-ES", {
+      month: "short",
+      day: "numeric",
+    }),
+    totalCollected: item.total_collected,
+    paymentCount: item.payment_count,
+  })) || [];
 
   // Componente de tooltip personalizado siguiendo el patrón del gráfico existente
   const CustomTooltip = ({ active, payload }: any) => {
