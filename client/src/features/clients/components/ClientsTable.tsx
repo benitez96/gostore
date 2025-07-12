@@ -65,7 +65,7 @@ export function ClientsTable({
       case "name":
         return (
           <div className="text-sm font-medium text-default-900">
-            {client.name} {client.lastname}
+            {client.lastname} {client.name} 
           </div>
         );
       case "dni":

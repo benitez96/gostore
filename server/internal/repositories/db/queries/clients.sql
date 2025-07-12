@@ -12,6 +12,7 @@ WHERE (name LIKE ?
    OR lastname LIKE ?
    OR dni LIKE ?)
   AND (CASE WHEN ? = '' THEN 1 ELSE c.state_id IN (sqlc.slice('state_ids')) END)
+ORDER BY lastname ASC, name ASC
 LIMIT ? OFFSET ?;
 
 -- name: CountClients :one
