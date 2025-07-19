@@ -10,6 +10,8 @@
         .header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px; }
         .client-info { font-size: 17px; line-height: 1.6; text-align: left; }
         .client-label { font-weight: bold; text-transform: capitalize; }
+        .client-name { font-size: 24px; font-weight: bold; }
+        .client-details { font-size: 17px; }
         .initials { font-size: 32px; font-weight: bold; border: 2px solid #222; border-radius: 10px; padding: 8px 18px; margin-left: 12px; }
         .venta-info { margin-bottom: 16px; }
         .venta-info strong { font-size: 17px; font-weight: bold; }
@@ -24,10 +26,10 @@
 <div class="sheet-box">
     <div class="header">
         <div class="client-info">
-            <div><span class="client-label">Cliente:</span> {{.ClientLastname}}, {{.ClientName}}</div>
-            <div><span class="client-label">DNI:</span> {{.ClientDni}}</div>
-            <div><span class="client-label">Email:</span> {{.ClientEmail}}</div>
-            <div><span class="client-label">Tel.:</span> {{.ClientPhone}}</div>
+            <div class="client-name"><span class="client-label">Cliente:</span> {{.ClientLastname}}, {{.ClientName}}</div>
+            <div class="client-details"><span class="client-label">DNI:</span> {{.ClientDni}}</div>
+            <div class="client-details"><span class="client-label">Email:</span> {{.ClientEmail}}</div>
+            <div class="client-details"><span class="client-label">Tel.:</span> {{.ClientPhone}}</div>
         </div>
         <div class="initials">{{.ClientInitials}}</div>
     </div>

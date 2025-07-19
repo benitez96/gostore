@@ -87,7 +87,7 @@ export function ClientsTable({
         );
       case "actions":
         return (
-          <div className="flex gap-2 justify-center">
+          <div className="flex gap-2 justify-center" onClick={(e) => e.stopPropagation()}>
             <Tooltip content="Ver detalles">
               <span className="text-lg text-default-400 cursor-pointer active:opacity-50">
                 <RiEyeLine onClick={() => handleViewClient(client)} />
@@ -153,7 +153,11 @@ export function ClientsTable({
         }
       >
         {(item: Client) => (
-          <TableRow key={item.id}>
+          <TableRow 
+            key={item.id}
+            className="cursor-pointer hover:bg-default-50 transition-colors"
+            onClick={() => handleViewClient(item)}
+          >
             {(columnKey) => (
               <TableCell>{renderCell(item, columnKey)}</TableCell>
             )}

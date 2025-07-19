@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Button } from "@heroui/button";
 import { Input } from "@heroui/input";
 import { Card, CardBody, CardHeader } from "@heroui/card";
@@ -23,6 +23,14 @@ export default function LoginForm({ onSubmit, isLoading = false, validationError
   });
   
   const [showPassword, setShowPassword] = useState(false);
+  const usernameInputRef = useRef<HTMLInputElement>(null);
+
+  // Focus en el campo username cuando el componente se monta
+  useEffect(() => {
+    if (usernameInputRef.current) {
+      usernameInputRef.current.focus();
+    }
+  }, []);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -80,6 +88,7 @@ export default function LoginForm({ onSubmit, isLoading = false, validationError
           <div className="space-y-4 w-full">
             {/* Campo Usuario */}
             <Input
+              ref={usernameInputRef}
               name="username"
               type="text"
               label="Usuario"

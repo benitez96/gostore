@@ -135,7 +135,12 @@ func (rg *ReportGenerator) GenerateSaleSheetPDF(saleID int, saleService ports.Sa
 	}
 
 	// Preparar datos para la plantilla
-	quotaPrice := sale.Quotas[0].Amount
+	// Usar la última cuota como precio base
+	quotaPrice := 0.0
+	if len(sale.Quotas) > 0 {
+		quotaPrice = sale.Quotas[len(sale.Quotas)-1].Amount
+	}
+
 	data := SaleSheetData{
 		ClientName:          client.Name,
 		ClientLastname:      client.Lastname,
@@ -399,7 +404,12 @@ func (rg *ReportGenerator) processSale(
 	}
 
 	// Preparar datos para la ficha de venta
-	quotaPrice := sale.Quotas[0].Amount
+	// Usar la última cuota como precio base
+	quotaPrice := 0.0
+	if len(sale.Quotas) > 0 {
+		quotaPrice = sale.Quotas[len(sale.Quotas)-1].Amount
+	}
+
 	saleEntry := SaleEntry{
 		ClientName:          client.Name,
 		ClientLastname:      client.Lastname,
@@ -465,7 +475,12 @@ func (rg *ReportGenerator) GenerateSalesBookPDF(saleService ports.SaleService, c
 		}
 
 		// Preparar datos para la ficha de venta
-		quotaPrice := sale.Quotas[0].Amount
+		// Usar la última cuota como precio base
+		quotaPrice := 0.0
+		if len(sale.Quotas) > 0 {
+			quotaPrice = sale.Quotas[len(sale.Quotas)-1].Amount
+		}
+
 		saleEntry := SaleEntry{
 			ClientName:          client.Name,
 			ClientLastname:      client.Lastname,

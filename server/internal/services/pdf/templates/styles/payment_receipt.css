@@ -1,57 +1,108 @@
-/* Recibo moderno inspirado en formato clásico argentino */
+/* Recibo moderno inspirado en formato clásico argentino - Versión compacta */
 .recibo-moderno {
     width: 95%;
     max-width: 900px;
     min-width: 400px;
-    margin: 40px auto;
+    margin: 20px auto 0px auto;
     background: #fff;
     border: 1.5px solid #222;
     border-radius: 8px;
     box-shadow: 0 2px 12px rgba(0,0,0,0.07);
-    padding: 36px 40px 28px 40px;
+    padding: 20px 30px 16px 30px;
     font-family: 'Segoe UI', 'Arial', sans-serif;
     box-sizing: border-box;
+}
+
+.recibo-empresa {
+    display: flex;
+    align-items: baseline;
+    justify-content: flex-start;
+    gap: 8px;
+    margin-bottom: 8px;
+}
+
+.recibo-empresa svg {
+    width: 20px;
+    height: 20px;
+    margin-right: 8px;
+    color: #1a237e;
+    stroke: #1a237e;
+    flex-shrink: 0;
+}
+
+.empresa-nombre {
+    font-size: 1.4rem;
+    font-weight: bold;
+    color: #1a237e;
+    letter-spacing: 1px;
+    line-height: 1;
+    display: flex;
+    align-items: center;
+}
+
+.duplicado .recibo-empresa svg {
+    color: #444;
+    stroke: #444;
+}
+
+.duplicado .empresa-nombre {
+    color: #444;
 }
 
 .recibo-header-row {
     display: flex;
     justify-content: space-between;
     align-items: flex-start;
-    margin-bottom: 32px;
+    margin-bottom: 18px;
 }
 
 .recibo-header {
     text-align: left;
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
 }
 
 .recibo-numero {
-    font-size: 1.3rem;
+    font-size: 1.2rem;
     font-weight: bold;
     letter-spacing: 1px;
     color: #1a237e;
     border-bottom: 2px solid #1a237e;
-    padding-bottom: 6px;
+    padding-bottom: 4px;
     display: inline-block;
+}
+
+.duplicado-texto {
+    font-size: 0.9rem;
+    font-weight: normal;
+    color: #666;
+    letter-spacing: 0.5px;
+    margin-left: 8px;
+}
+
+.duplicado .duplicado-texto {
+    color: #888;
 }
 
 .recibo-fecha-header {
     text-align: right;
-    font-size: 1.08rem;
+    font-size: 1rem;
     color: #333;
     margin-top: 2px;
     min-width: 120px;
 }
 
 .recibo-campos {
-    margin-bottom: 38px;
+    margin-bottom: 20px;
 }
 
 .recibo-row {
     display: flex;
     align-items: center;
     border-bottom: 1px solid #e0e0e0;
-    padding: 12px 0 6px 0;
-    font-size: 1.08rem;
+    padding: 8px 0 4px 0;
+    font-size: 1rem;
 }
 
 .recibo-label {
@@ -69,44 +120,44 @@
 }
 
 .monto {
-    font-size: 1.2rem;
+    font-size: 1.1rem;
     font-weight: bold;
     color: #00796b;
 }
 
 .recibo-firma {
-    margin-top: 48px;
+    margin-top: 24px;
     text-align: right;
 }
 
 .firma-linea {
     display: inline-block;
-    width: 220px;
+    width: 200px;
     height: 2px;
     background: #222;
-    margin-bottom: 4px;
+    margin-bottom: 3px;
 }
 
 .firma-label {
-    font-size: 0.95rem;
+    font-size: 0.9rem;
     color: #888;
     font-style: italic;
     margin-right: 8px;
 }
 
 .recibo-footer {
-    margin-top: 36px;
+    margin-top: 20px;
     text-align: center;
     color: #888;
-    font-size: 0.98rem;
+    font-size: 0.95rem;
     border-top: 1px solid #e0e0e0;
-    padding-top: 12px;
+    padding-top: 8px;
 }
 
 .recibo-corte {
     width: 95%;
     max-width: 900px;
-    margin: 24px auto 24px auto;
+    margin: 6px auto 6px auto;
     text-align: center;
 }
 
@@ -146,10 +197,10 @@
         margin: 0 auto;
         box-shadow: none;
         border: 1.5px solid #222;
-        padding: 24px 24px 18px 24px;
+        padding: 16px 20px 12px 20px;
     }
     .recibo-corte {
-        margin: 16px auto 16px auto;
+        margin: 4px auto 4px auto;
     }
     .linea-punteada {
         border-top: 2px dashed #888;

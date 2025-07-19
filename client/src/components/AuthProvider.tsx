@@ -16,7 +16,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   // Sistema de inactividad con warning
   const idle = useIdleWithWarning({
-    idleTimeout: 5 * 60 * 1000, // 5 minutos total
+    idleTimeout: 30 * 60 * 1000, // 5 minutos total
     warningTimeout: 30 * 1000,  // 30 segundos de warning
     onLogout: () => {
       // Limpiar el estado de autenticación cuando se hace logout por inactividad

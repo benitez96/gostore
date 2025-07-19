@@ -123,17 +123,18 @@ func (tm *TemplateManager) GenerateSalesBookHTML(data SalesBookData) (string, er
 	for i, sale := range data.Sales {
 		// Convertir SaleEntry a SaleSheetData
 		saleData := SaleSheetData{
-			ClientName:     sale.ClientName,
-			ClientLastname: sale.ClientLastname,
-			ClientInitials: sale.ClientInitials,
-			ClientDni:      sale.ClientDni,
-			ClientEmail:    sale.ClientEmail,
-			ClientPhone:    sale.ClientPhone,
-			SaleDate:       sale.SaleDate,
-			ProductDesc:    sale.ProductDesc,
-			NumQuotas:      sale.NumQuotas,
-			QuotaPrice:     sale.QuotaPrice,
-			Quotas:         sale.Quotas,
+			ClientName:          sale.ClientName,
+			ClientLastname:      sale.ClientLastname,
+			ClientInitials:      sale.ClientInitials,
+			ClientDni:           sale.ClientDni,
+			ClientEmail:         sale.ClientEmail,
+			ClientPhone:         sale.ClientPhone,
+			SaleDate:            sale.SaleDate,
+			ProductDesc:         sale.ProductDesc,
+			NumQuotas:           sale.NumQuotas,
+			QuotaPrice:          sale.QuotaPrice,
+			QuotaPriceFormatted: sale.QuotaPriceFormatted,
+			Quotas:              sale.Quotas,
 		}
 
 		// Ejecutar el template para esta venta
